@@ -1,0 +1,2 @@
+# Helpers and Core Logic
+This directory will contain helper libraries (e.g. Supabase client setup) and core logic (e.g. TrustScore calculation).
