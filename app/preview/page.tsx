@@ -3,6 +3,67 @@
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import StartupCard from "@/components/StartupCard";
+import { StartupCardData } from "@/types/startup";
+
+const mockStartups: StartupCardData[] = [
+  {
+    name: "Apex Biosensors",
+    logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&h=128&fit=crop&q=80",
+    description: "Continuous glucose monitoring using non-invasive infrared spectroscopy.",
+    sector: "Healthtech",
+    stage: "Scaling",
+    location: "Boston, MA",
+    foundedYear: 2021,
+    investorCount: 8,
+    fundingRound: "Series A",
+    trustScore: 840,
+    badgeTier: "investor-backed",
+    showScore: true,
+  },
+  {
+    name: "Velo Logistics",
+    logoUrl: "https://images.unsplash.com/photo-1618005198143-e528346d9a59?w=128&h=128&fit=crop&q=80",
+    description: "Last-mile drone delivery network for urgent medical supplies.",
+    sector: "Logistics",
+    stage: "Revenue",
+    location: "Austin, TX",
+    foundedYear: 2022,
+    investorCount: 4,
+    fundingRound: "Seed",
+    trustScore: 710,
+    badgeTier: "stakeholder-endorsed",
+    showScore: true,
+  },
+  {
+    name: "Nova Carbon",
+    logoUrl: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=128&h=128&fit=crop&q=80",
+    description: "Direct air capture systems using novel solid sorbent filters.",
+    sector: "Climate",
+    stage: "MVP",
+    location: "Seattle, WA",
+    foundedYear: 2023,
+    investorCount: 2,
+    fundingRound: "Pre-Seed",
+    trustScore: 650,
+    badgeTier: "document-backed",
+    showScore: false,
+  },
+  {
+    name: "Solara Analytics",
+    logoUrl: "",
+    description: "Predictive maintenance algorithms for utility-scale solar farms.",
+    sector: "Energy",
+    stage: "Idea",
+    location: "Denver, CO",
+    foundedYear: 2024,
+    investorCount: 0,
+    fundingRound: "Pre-Seed",
+    trustScore: 480,
+    badgeTier: "self-reported",
+    showScore: true,
+  },
+];
 
 export default function PreviewPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -155,6 +216,24 @@ export default function PreviewPage() {
             </div>
           </div>
 
+        </div>
+
+        {/* Startup Card Preview Grid */}
+        <div className="flex flex-col gap-6 mt-6">
+          <div>
+            <h2 className="text-xl font-medium text-text-primary">
+              Startup Directory Card Preview
+            </h2>
+            <p className="text-sm text-text-secondary mt-1">
+              Interactive display of the reusable StartupCard component in the investor directory, showcasing all verification badge tiers and the locked-score state.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {mockStartups.map((startup, idx) => (
+              <StartupCard key={idx} startup={startup} />
+            ))}
+          </div>
         </div>
 
       </main>
