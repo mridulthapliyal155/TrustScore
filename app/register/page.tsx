@@ -15,6 +15,7 @@ const STEPS: FormStep[] = [
   { title: "Founders", description: "Who is building this company?" },
   { title: "Stage & traction", description: "Where are you on the startup path?" },
   { title: "Endorsements", description: "Incubators, external funding, and raising plans." },
+  { title: "Evidence", description: "Upload supporting documents to verify claims." },
   { title: "Consent", description: "Configure visibility for your computed TrustScore." },
 ];
 
@@ -35,6 +36,63 @@ export default function RegisterPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const renderFileInput = (
+    label: string,
+    file: File | null,
+    setFile: (f: File | null) => void,
+    id: string
+  ) => {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-semibold text-text-primary">
+          {label}
+        </label>
+        
+        {file ? (
+          <div className="flex items-center justify-between border border-border-hairline rounded-button bg-surface p-3 text-sm text-text-primary animate-in fade-in duration-100">
+            <div className="flex items-center gap-2 truncate">
+              <svg className="w-4 h-4 text-text-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="truncate font-medium">{file.name}</span>
+              <span className="text-[10px] text-text-secondary">({(file.size / 1024).toFixed(1)} KB)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFile(null)}
+              className="text-xs text-text-secondary hover:text-accent font-medium cursor-pointer"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center border border-dashed border-border-hairline hover:border-accent/40 rounded-button bg-surface p-6 text-center cursor-pointer group transition-colors duration-150">
+            <svg className="w-6 h-6 text-text-secondary group-hover:text-accent transition-colors duration-150 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span className="text-xs text-text-primary font-medium">
+              Click to select or drag file here
+            </span>
+            <span className="text-[10px] text-text-secondary mt-1">
+              Supports PDF, PNG, JPG, Word, Excel, PowerPoint
+            </span>
+            <input
+              type="file"
+              id={id}
+              className="hidden"
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setFile(e.target.files[0]);
+                }
+              }}
+            />
+          </label>
+        )}
+      </div>
+    );
+  };
 
   // Form Field States
   // Step 1: Basics
@@ -66,7 +124,13 @@ export default function RegisterPage() {
   ]);
   const [isRaising, setIsRaising] = useState("");
 
-  // Step 5: Consent
+  // Step 5: Evidence
+  const [coiFile, setCoiFile] = useState<File | null>(null);
+  const [financialsFile, setFinancialsFile] = useState<File | null>(null);
+  const [pitchDeckFile, setPitchDeckFile] = useState<File | null>(null);
+  const [capTableFile, setCapTableFile] = useState<File | null>(null);
+
+  // Step 6: Consent
   const [consentPublic, setConsentPublic] = useState(false);
 
   // Validation Error States
@@ -297,6 +361,15 @@ export default function RegisterPage() {
                     {consentPublic ? "Yes, display computed TrustScore publicly" : "No, keep TrustScore locked"}
                   </p>
                 </div>
+                <div className="col-span-2 border-t border-border-hairline pt-2 mt-1">
+                  <p className="text-text-secondary font-medium mb-1">Uploaded Evidence</p>
+                  <ul className="list-disc pl-4 space-y-1 text-text-primary">
+                    <li>Certificate of Incorporation: {coiFile ? coiFile.name : "Not provided"}</li>
+                    <li>Financials / Revenue Proof: {financialsFile ? financialsFile.name : "Not provided"}</li>
+                    <li>Pitch Deck: {pitchDeckFile ? pitchDeckFile.name : "Not provided"}</li>
+                    <li>Cap Table: {capTableFile ? capTableFile.name : "Not provided"}</li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -322,6 +395,10 @@ export default function RegisterPage() {
                 setIsFunded("");
                 setFundingDetails([{ investorName: "", amount: "", currency: "USD", round: "Seed", date: "" }]);
                 setIsRaising("");
+                setCoiFile(null);
+                setFinancialsFile(null);
+                setPitchDeckFile(null);
+                setCapTableFile(null);
                 setConsentPublic(false);
                 setCurrentStep(0);
                 setIsSubmitted(false);
@@ -943,7 +1020,48 @@ export default function RegisterPage() {
                   )}
 
                   {currentStep === 4 && (
-                    /* Step 5: Consent */
+                    /* Step 5: Evidence */
+                    <>
+                      <div className="space-y-5">
+                        <p className="text-xs text-text-secondary leading-relaxed bg-[#FAFAF8] border border-border-hairline rounded-card p-3">
+                          Uploading evidence helps verify your claims and raises your Trustscore, but all uploads are optional. You can upload files now or complete this later.
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          {renderFileInput(
+                            "Certificate of incorporation",
+                            coiFile,
+                            setCoiFile,
+                            "coi-file-input"
+                          )}
+
+                          {renderFileInput(
+                            "Financials / revenue proof",
+                            financialsFile,
+                            setFinancialsFile,
+                            "financials-file-input"
+                          )}
+
+                          {renderFileInput(
+                            "Pitch deck",
+                            pitchDeckFile,
+                            setPitchDeckFile,
+                            "pitchdeck-file-input"
+                          )}
+
+                          {renderFileInput(
+                            "Cap table",
+                            capTableFile,
+                            setCapTableFile,
+                            "captable-file-input"
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {currentStep === 5 && (
+                    /* Step 6: Consent */
                     <>
                       <div className="bg-[#FAFAF8] border border-border-hairline rounded-card p-5 space-y-4">
                         <h3 className="text-sm font-semibold text-text-primary">
