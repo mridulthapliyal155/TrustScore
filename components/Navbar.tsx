@@ -29,7 +29,7 @@ const navConfig: NavItem[] = [
     label: "Products",
     dropdownItems: [
       { label: "For Founders", href: "/products/founders" },
-      { label: "For Investors", href: "/products/investors" },
+      { label: "For Investors", href: "/directory" },
     ],
   },
   {
