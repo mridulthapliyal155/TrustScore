@@ -22,7 +22,7 @@ A startup validation platform. Two user types: founders (build a credibility pro
 
 ## Typography
 - Sans-serif, modern, high legibility (Inter or similar).
-- Sentence case everywhere. Never Title Case, never ALL CAPS.
+- Title case for nav links, buttons, and headings (e.g., "For Founders", "Log In"). Never ALL CAPS. Body and helper text stays sentence case.
 - Two weights: regular (400) and medium (500). No bold-heavy headers.
 
 ## Components
