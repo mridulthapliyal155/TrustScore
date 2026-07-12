@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 interface DropdownItem {
@@ -79,10 +79,6 @@ export default function Navbar({
   // Mobile menu state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Refs for closing dropdowns on click outside
-  const productsRef = useRef<HTMLDivElement>(null);
-  const profileRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       // Check if target is a preview control to prevent double-toggle bugs
@@ -90,21 +86,8 @@ export default function Navbar({
       if (target && target.closest && target.closest(".preview-control")) {
         return;
       }
-
-      if (productsRef.current) {
-        const isInside = productsRef.current.contains(event.target as Node);
-        console.log("Navbar: handleClickOutside productsRef, isInside:", isInside);
-        if (!isInside) {
-          setProductsOpen(false);
-        }
-      }
-      if (profileRef.current) {
-        const isInside = profileRef.current.contains(event.target as Node);
-        console.log("Navbar: handleClickOutside profileRef, isInside:", isInside);
-        if (!isInside) {
-          setProfileOpen(false);
-        }
-      }
+      setProductsOpen(false);
+      setProfileOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -170,9 +153,13 @@ export default function Navbar({
             {navConfig.map((item) => (
               <div key={item.label} className="relative">
                 {item.dropdownItems ? (
-                  <div ref={productsRef} className="relative">
+                  <div className="relative">
                     <button
-                      onClick={() => setProductsOpen(!isProductsOpen)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={() => {
+                        setProductsOpen(!isProductsOpen);
+                        setProfileOpen(false);
+                      }}
                       className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer py-1.5 focus:outline-hidden"
                       aria-expanded={isProductsOpen}
                       aria-haspopup="true"
@@ -193,7 +180,10 @@ export default function Navbar({
 
                     {/* Products Dropdown menu */}
                     {isProductsOpen && (
-                      <div className="absolute left-0 mt-2 w-48 bg-surface border border-border-hairline rounded-card p-1.5 shadow-xs focus:outline-hidden animate-in fade-in slide-in-from-top-1 duration-100 z-50">
+                      <div
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="absolute left-0 mt-2 w-48 bg-surface border border-border-hairline rounded-card p-1.5 shadow-xs focus:outline-hidden animate-in fade-in slide-in-from-top-1 duration-100 z-50"
+                      >
                         {item.dropdownItems.map((subItem) => (
                           <Link
                             key={subItem.label}
@@ -238,9 +228,13 @@ export default function Navbar({
               </button>
             </>
           ) : (
-            <div ref={profileRef} className="relative">
+            <div className="relative">
               <button
-                onClick={() => setProfileOpen(!isProfileOpen)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => {
+                  setProfileOpen(!isProfileOpen);
+                  setProductsOpen(false);
+                }}
                 className="w-9 h-9 rounded-full bg-accent/10 border border-accent/15 flex items-center justify-center hover:bg-accent/15 transition-all cursor-pointer focus:outline-hidden select-none"
                 aria-expanded={isProfileOpen}
                 aria-haspopup="true"
@@ -250,7 +244,10 @@ export default function Navbar({
 
               {/* Profile Dropdown Menu */}
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-surface border border-border-hairline rounded-card p-3 shadow-xs animate-in fade-in slide-in-from-top-1 duration-100 z-50">
+                <div
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="absolute right-0 mt-2 w-64 bg-surface border border-border-hairline rounded-card p-3 shadow-xs animate-in fade-in slide-in-from-top-1 duration-100 z-50"
+                >
                   {/* User Profile Header */}
                   <div className="px-2 pb-2.5 mb-2 border-b border-border-hairline">
                     <p className="text-sm font-medium text-text-primary">Alex Rivera</p>
