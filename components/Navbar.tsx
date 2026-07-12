@@ -188,7 +188,7 @@ export default function Navbar({
                           <Link
                             key={subItem.label}
                             href={subItem.href}
-                            onClick={() => setProductsOpen(false)}
+                            onClick={() => setTimeout(() => setProductsOpen(false), 0)}
                             className="block px-3.5 py-2 text-sm text-text-primary hover:bg-background rounded-button transition-colors duration-150"
                           >
                             {subItem.label}
@@ -258,14 +258,14 @@ export default function Navbar({
                   <div className="space-y-0.5">
                     <Link
                       href="/dashboard/profile"
-                      onClick={() => setProfileOpen(false)}
+                      onClick={() => setTimeout(() => setProfileOpen(false), 0)}
                       className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                     >
                       My Startup Details
                     </Link>
                     <Link
                       href="/dashboard/settings"
-                      onClick={() => setProfileOpen(false)}
+                      onClick={() => setTimeout(() => setProfileOpen(false), 0)}
                       className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                     >
                       Settings
