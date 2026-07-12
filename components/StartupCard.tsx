@@ -29,7 +29,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
       <div className="flex flex-col gap-4">
         {/* Header: Logo, Name and TrustScore */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Startup Logo with initials fallback */}
             <div className="w-10 h-10 rounded-lg overflow-hidden border border-border-hairline bg-[#FAFAF8] flex items-center justify-center flex-shrink-0">
               {logoUrl ? (
@@ -57,11 +57,11 @@ export default function StartupCard({ startup }: StartupCardProps) {
                 </span>
               )}
             </div>
-            <div>
-              <h3 className="text-base font-medium text-text-primary leading-tight">
+            <div className="min-w-0">
+              <h3 className="text-base font-medium text-text-primary leading-tight truncate">
                 {name}
               </h3>
-              <p className="text-xs text-text-secondary mt-1">
+              <p className="text-xs text-text-secondary mt-1 truncate">
                 {sector}
               </p>
             </div>
@@ -70,12 +70,12 @@ export default function StartupCard({ startup }: StartupCardProps) {
           {/* TrustScore or Locked State */}
           <div className="flex flex-col items-end flex-shrink-0">
             {showScore ? (
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-text-secondary tracking-wider font-medium leading-none mb-0.5">
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-text-secondary tracking-wider font-medium leading-none">
                     Trustscore
                   </span>
-                  <span className="text-lg font-medium text-text-primary tracking-tight leading-none">
+                  <span className="text-base font-medium text-text-primary tracking-tight leading-none">
                     {Math.round(trustScore * 100)}
                   </span>
                 </div>
