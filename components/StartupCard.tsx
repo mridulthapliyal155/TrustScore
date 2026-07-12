@@ -72,11 +72,11 @@ export default function StartupCard({ startup }: StartupCardProps) {
             {showScore ? (
               <div className="flex items-center gap-2">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-text-secondary uppercase tracking-wider font-medium leading-none mb-0.5">
-                    TrustScore
+                  <span className="text-[10px] text-text-secondary tracking-wider font-medium leading-none mb-0.5">
+                    Trustscore
                   </span>
                   <span className="text-lg font-medium text-text-primary tracking-tight leading-none">
-                    {trustScore}
+                    {Math.round(trustScore * 100)}
                   </span>
                 </div>
                 <VerificationBadge tier={badgeTier} />
@@ -94,7 +94,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
                   <path d="M 4.5,6 V 3.5 A 2.5,2.5 0 0,1 9.5,3.5 V 6" />
                 </svg>
                 <span className="text-[11px] font-medium text-text-secondary leading-none">
-                  Score Not Shared
+                  Score not shared
                 </span>
               </div>
             )}
@@ -113,8 +113,8 @@ export default function StartupCard({ startup }: StartupCardProps) {
         <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs pt-4 border-t border-border-hairline">
           {/* Sector & Stage */}
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-text-secondary uppercase tracking-wider font-medium">
-              Sector & Stage
+            <span className="text-[10px] text-text-secondary tracking-wider font-medium">
+              Sector & stage
             </span>
             <div className="flex items-center gap-1.5 text-text-primary">
               <span className="font-medium">{sector}</span>
@@ -125,8 +125,8 @@ export default function StartupCard({ startup }: StartupCardProps) {
 
           {/* Location & Founded */}
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-text-secondary uppercase tracking-wider font-medium">
-              Location & Founded
+            <span className="text-[10px] text-text-secondary tracking-wider font-medium">
+              Location & founded
             </span>
             <div className="flex items-center gap-1.5 text-text-primary">
               <span className="font-medium">{location}</span>
@@ -137,8 +137,8 @@ export default function StartupCard({ startup }: StartupCardProps) {
 
           {/* Funding & Investors */}
           <div className="flex flex-col gap-0.5 col-span-2">
-            <span className="text-[10px] text-text-secondary uppercase tracking-wider font-medium">
-              Funding & Investors
+            <span className="text-[10px] text-text-secondary tracking-wider font-medium">
+              Funding & investors
             </span>
             <div className="flex items-center gap-1.5 text-text-primary">
               <span className="font-medium">{fundingRound}</span>
