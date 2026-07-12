@@ -8,6 +8,7 @@ import { StartupCardData } from "@/types/startup";
 
 const mockStartups: StartupCardData[] = [
   {
+    id: "apex-biosensors",
     name: "Apex Biosensors",
     logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&h=128&fit=crop&q=80",
     description: "Continuous glucose monitoring using non-invasive infrared spectroscopy.",
@@ -22,6 +23,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "velo-logistics",
     name: "Velo Logistics",
     logoUrl: "https://images.unsplash.com/photo-1618005198143-e528346d9a59?w=128&h=128&fit=crop&q=80",
     description: "Last-mile drone delivery network for urgent medical supplies.",
@@ -36,6 +38,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "nova-carbon",
     name: "Nova Carbon",
     logoUrl: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=128&h=128&fit=crop&q=80",
     description: "Direct air capture systems using novel solid sorbent filters.",
@@ -50,6 +53,7 @@ const mockStartups: StartupCardData[] = [
     showScore: false,
   },
   {
+    id: "solara-analytics",
     name: "Solara Analytics",
     logoUrl: "",
     description: "Predictive maintenance algorithms for utility-scale solar farms.",
@@ -64,6 +68,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "orion-cyber",
     name: "Orion Cyber",
     logoUrl: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=128&h=128&fit=crop&q=80",
     description: "Decentralized zero-trust endpoint access and threat modeling APIs.",
@@ -78,6 +83,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "aether-agriculture",
     name: "Aether Agriculture",
     logoUrl: "https://images.unsplash.com/photo-1618005198143-e528346d9a59?w=128&h=128&fit=crop&q=80",
     description: "Automated indoor vertical farming cabinets using aeroponic delivery systems.",
@@ -92,6 +98,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "krypton-fin",
     name: "Krypton Fin",
     logoUrl: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=128&h=128&fit=crop&q=80",
     description: "Next-generation credit scoring APIs based on alternative ledger history.",
@@ -106,6 +113,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "zephyr-materials",
     name: "Zephyr Materials",
     logoUrl: "",
     description: "Biodegradable natural polymers to replace single-use plastics.",
@@ -120,6 +128,7 @@ const mockStartups: StartupCardData[] = [
     showScore: true,
   },
   {
+    id: "lumen-ai",
     name: "Lumen AI",
     logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&h=128&fit=crop&q=80",
     description: "Edge AI vision processing units for autonomous drone control.",

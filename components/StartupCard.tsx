@@ -9,6 +9,7 @@ export interface StartupCardProps {
 
 export default function StartupCard({ startup }: StartupCardProps) {
   const {
+    id,
     name,
     logoUrl,
     description,
@@ -153,7 +154,7 @@ export default function StartupCard({ startup }: StartupCardProps) {
         {/* Action Link Footer */}
         <div className="flex items-center justify-end pt-3 border-t border-border-hairline/60">
           <Link
-            href="#"
+            href={`/startup/${id || "apex-biosensors"}`}
             className="text-sm font-medium text-accent hover:underline inline-flex items-center gap-1 group transition-all"
           >
             <span>Open Profile</span>
