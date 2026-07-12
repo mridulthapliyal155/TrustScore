@@ -15,13 +15,14 @@ const footerConfig: FooterColumn[] = [
       { label: "About", href: "/about" },
       { label: "Team", href: "/team" },
       { label: "Contact", href: "/contact" },
+      { label: "How It Works", href: "/how-it-works" },
     ],
   },
   {
     title: "Products",
     links: [
-      { label: "For Founders", href: "/products/founders" },
-      { label: "For Investors", href: "/products/investors" },
+      { label: "For Founders", href: "/register" },
+      { label: "For Investors", href: "/directory" },
     ],
   },
   {

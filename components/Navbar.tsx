@@ -26,15 +26,12 @@ export interface NavbarProps {
 
 const navConfig: NavItem[] = [
   {
-    label: "Products",
-    dropdownItems: [
-      { label: "For Founders", href: "/products/founders" },
-      { label: "For Investors", href: "/directory" },
-    ],
+    label: "For Founders",
+    href: "/register",
   },
   {
-    label: "How It Works",
-    href: "/how-it-works",
+    label: "For Investors",
+    href: "/directory",
   },
 ];
 
