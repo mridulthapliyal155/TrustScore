@@ -116,7 +116,7 @@ export default function PreviewPage() {
                   // Reset profile dropdown if logging out
                   if (isLoggedIn) setProfileOpen(false);
                 }}
-                className={`px-4 py-2 text-sm font-medium rounded-button border transition-all cursor-pointer select-none ${
+                className={`preview-control px-4 py-2 text-sm font-medium rounded-button border transition-all cursor-pointer select-none ${
                   isLoggedIn
                     ? "bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"
                     : "bg-surface border-border-hairline text-text-primary hover:bg-background"
@@ -131,7 +131,7 @@ export default function PreviewPage() {
               <span className="text-xs font-medium text-text-secondary">Products Menu</span>
               <button
                 onClick={() => setProductsOpen(!productsOpen)}
-                className={`px-4 py-2 text-sm font-medium rounded-button border transition-all cursor-pointer select-none ${
+                className={`preview-control px-4 py-2 text-sm font-medium rounded-button border transition-all cursor-pointer select-none ${
                   productsOpen
                     ? "bg-accent/10 border-accent/20 text-accent hover:bg-accent/15"
                     : "bg-surface border-border-hairline text-text-primary hover:bg-background"
@@ -147,7 +147,7 @@ export default function PreviewPage() {
               <button
                 onClick={() => isLoggedIn && setProfileOpen(!profileOpen)}
                 disabled={!isLoggedIn}
-                className={`px-4 py-2 text-sm font-medium rounded-button border transition-all select-none ${
+                className={`preview-control px-4 py-2 text-sm font-medium rounded-button border transition-all select-none ${
                   !isLoggedIn
                     ? "bg-background border-border-hairline text-text-secondary opacity-50 cursor-not-allowed"
                     : profileOpen

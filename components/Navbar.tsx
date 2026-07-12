@@ -85,6 +85,12 @@ export default function Navbar({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      // Check if target is a preview control to prevent double-toggle bugs
+      const target = event.target as HTMLElement;
+      if (target && target.closest && target.closest(".preview-control")) {
+        return;
+      }
+
       if (productsRef.current) {
         const isInside = productsRef.current.contains(event.target as Node);
         console.log("Navbar: handleClickOutside productsRef, isInside:", isInside);
