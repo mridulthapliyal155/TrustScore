@@ -32,6 +32,7 @@ export default function Navbar({
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompanies, setHasCompanies] = useState<boolean>(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Products dropdown state
@@ -77,6 +78,39 @@ export default function Navbar({
       subscription.unsubscribe();
     };
   }, [supabase]);
+
+  useEffect(() => {
+    if (!user) {
+      setHasCompanies(false);
+      return;
+    }
+
+    const userId = user.id;
+
+    async function checkCompanies() {
+      try {
+        const { count, error } = await supabase
+          .from("companies")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_id", userId);
+
+        if (!error && count !== null && count > 0) {
+          setHasCompanies(true);
+        } else {
+          setHasCompanies(false);
+        }
+      } catch (err) {
+        console.error("Error checking companies in Navbar:", err);
+      }
+    }
+
+    const userRole = user.user_metadata?.role || user.user_metadata?.user_type || "";
+    if (userRole === "founder") {
+      checkCompanies();
+    } else {
+      setHasCompanies(false);
+    }
+  }, [user, supabase]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -237,7 +271,7 @@ export default function Navbar({
                         Dashboard
                       </Link>
                     )}
-                    {userRole === "founder" && (
+                    {userRole === "founder" && !hasCompanies && (
                       <Link
                         href="/register"
                         onClick={() => setProfileOpen(false)}
@@ -360,7 +394,7 @@ export default function Navbar({
                       Dashboard
                     </Link>
                   )}
-                  {userRole === "founder" && (
+                  {userRole === "founder" && !hasCompanies && (
                     <Link
                       href="/register"
                       onClick={() => setMobileMenuOpen(false)}
