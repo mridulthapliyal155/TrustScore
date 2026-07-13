@@ -181,12 +181,6 @@ export default function Navbar({
           ) : !isLoggedIn ? (
             <>
               <Link
-                href="/auth?mode=signin"
-                className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors py-1.5 focus:outline-hidden"
-              >
-                Sign in
-              </Link>
-              <Link
                 href="/auth?mode=signup"
                 className="bg-accent text-surface px-4 py-2 text-sm font-medium rounded-button hover:bg-opacity-90 active:scale-98 transition-all focus:outline-hidden"
               >
@@ -318,13 +312,6 @@ export default function Navbar({
               <div className="h-9 w-20 bg-neutral-100 animate-pulse rounded-button"></div>
             ) : !isLoggedIn ? (
               <div className="flex flex-col gap-2">
-                <Link
-                  href="/auth?mode=signin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2 text-sm font-medium text-text-primary border border-border-hairline rounded-button bg-background"
-                >
-                  Sign in
-                </Link>
                 <Link
                   href="/auth?mode=signup"
                   onClick={() => setMobileMenuOpen(false)}
