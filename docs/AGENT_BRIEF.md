@@ -136,17 +136,115 @@ Lowest to highest:
 
 Hard rule: never display a score without its tier badge. No bare numbers.
 
+## 6a. Score scale
+
+The TrustScore is stored as a 0 to 1 value (e.g. 0.84). It is always displayed
+scaled to a 0 to 100 whole number (0.84 shows as 84), using Math.round(score * 100)
+at render time. The stored value never changes, only the display is scaled. Never
+show the raw decimal to users. This scaling is identical on every screen (card,
+profile, anywhere a score appears).
+
+## 6b. Scoring model (weighted verification)
+
+The score rises as a founder's claims get verified. Each claim sits at a verification
+tier, and higher tiers contribute more weight to the score:
+
+- self-reported: lowest weight (typed, unproven)
+- AI-extracted: low-mid (AI pulled it from a provided source)
+- document-backed: mid (supporting document uploaded)
+- stakeholder-endorsed: high (credible third party vouches)
+- investor-backed: highest (an investor committed capital)
+
+The score is a weighted function of how verified each claim is. A founder raises their
+score by proving claims (moving them up tiers), not by adding more unproven claims.
+The formula is real and explainable: tier weights summed across claims, normalized to
+0 to 1. Keep the weighting logic in /lib so it is testable and can be shown to judges.
+
+## 6c. AI role
+
+The AI has two jobs:
+
+1. Document evaluation and owner coaching. When a founder uploads a document (deck,
+   incorporation certificate, financials), the AI reads it, extracts relevant claims,
+   and assigns/updates verification tiers. In the founder's OWN profile (owner view
+   only) it advises what is missing and how to improve the score (e.g. "revenue is
+   self-reported, upload financials to make it document-backed"). This coaching is
+   PRIVATE to the founder and never appears on the public/visitor profile or in the
+   directory.
+2. Score calculation. Turn the verified tiers into the number per section 6b.
+
+Hackathon scope note: the scoring formula and the AI coaching are fully real and
+demoable. Full document authenticity checking against external registries is a
+post-hackathon feature. For the demo, the AI reads the uploaded document and assigns
+a tier based on a document being provided for the claim, plus extracted content. Do
+not overclaim registry-level verification in the UI.
+
+## 6c-1. Review pipeline and status
+
+Nothing goes public until reviewed. Every startup has a status:
+
+- **pending** — just submitted, not yet evaluated.
+- **under review** — AI has evaluated and proposed a score and tiers; a human is
+  cross-checking.
+- **approved** — human confirmed; the startup goes live in the directory with its score.
+- **rejected** — did not pass; not shown publicly. The founder sees this status in
+  their own owner view.
+
+Rules:
+- The public directory shows ONLY approved startups.
+- After registration the founder is (once auth exists) auto-logged-in and lands on
+  their owner profile, which shows the company data and the current status. The
+  registration success screen is the founder's first view of their under-review profile.
+- The score is proposed by the AI during "under review" and finalized by the human at
+  "approved". No score is computed or shown at submission time.
+- Real review takes 10 to 15 days. For the demo, status is toggleable (via the admin
+  view or a mock control) so the full lifecycle can be shown in seconds.
+
+## 6d. Owner vs visitor profile views
+
+The profile page renders two ways based on an ownership check (is the logged-in user
+the profile owner?):
+
+- Owner view: full data, edit controls per section, private fields, the AI coaching,
+  and the founder always sees their own score regardless of the consent flag.
+- Visitor view (investors, anyone else): read-only, no edit controls, public fields
+  only, no AI coaching, submitter contact never shown, and the score consent flag
+  applies (locked state if the founder chose not to show the score).
+
+Ownership depends on auth (backend step). Until auth exists, build both views behind
+a mock owner/visitor toggle, same pattern as the navbar auth toggle.
+
 ---
 
-## 7. Visibility rules
+## 7. Consent rule (single flag)
 
-- `public` fields show on the founder's public profile.
-- `shared-link only` fields show only when a founder generates a share link for a
-  specific investor. Revenue, active users, investor detail, and cap table default
-  here.
-- `private` fields are never shown to investors. Submitter contact is always private.
-- Sensitive fields default to the more restrictive setting. A founder can loosen,
-  never the system by default.
+There is one consent flag: whether the founder consents to display their TrustScore.
+
+- **Consent yes:** the card and profile show the score with its verification badge.
+- **Consent no:** the founder still appears in the directory. The score slot renders
+  a locked/hidden state (e.g. a lock icon with muted "Score not shared" text), never
+  a number, a zero, or a blank. It must read as a deliberate choice, not an error.
+
+No directory-level consent and no field-level visibility ladder. Submitter contact
+(name, email, phone) is always private and never shown, but that is a fixed rule,
+not a founder-controlled setting.
+
+## 7a. Directory card spec
+
+The compact card shown in the investor directory. Its only job is the click/skip
+decision, so keep it light. Fields:
+
+1. Logo + startup name
+2. One-line description
+3. TrustScore + verification badge (the anchor; locked state if consent is no)
+4. Sector tag + stage
+5. Location + founded year
+6. Investor count + funding round
+7. "Open Profile" link
+
+Everything else (founder scores, revenue stats, incubators, investors, financing,
+performance metrics, ratings, similar startups) lives on the full profile page, not
+the card.
 
 ---
 
