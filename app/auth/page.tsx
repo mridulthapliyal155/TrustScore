@@ -122,7 +122,7 @@ function AuthForm() {
           data: {
             role: role,
             user_type: role,
-            full_name: fullName,
+            display_name: fullName,
           },
         },
       });

@@ -69,7 +69,7 @@ export default function DashboardPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-medium tracking-tight text-text-primary">
-              Welcome to TrustScore AI
+              Welcome, {user.user_metadata?.display_name || user.email || ""}!
             </h1>
             <p className="text-sm text-text-secondary leading-relaxed">
               To start building your startup credibility profile and calculate your TrustScore, register your company details.

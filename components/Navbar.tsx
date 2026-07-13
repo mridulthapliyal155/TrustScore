@@ -107,8 +107,9 @@ export default function Navbar({
 
   const isLoggedIn = user !== null;
   const userRole = user?.user_metadata?.role || user?.user_metadata?.user_type || "";
-  const userInitials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
+  const displayName = user?.user_metadata?.display_name || user?.email || "";
+  const userInitials = displayName
+    ? displayName.split(/\s+/).map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
     : "US";
 
   // Dynamic Navigation Config based on User State and Role (in sentence case)
@@ -214,7 +215,14 @@ export default function Navbar({
                 >
                   {/* User Profile Header */}
                   <div className="px-2 pb-2.5 mb-2 border-b border-border-hairline">
-                    <p className="text-sm font-medium text-text-primary truncate">{user.email}</p>
+                    {user?.user_metadata?.display_name ? (
+                      <>
+                        <p className="text-sm font-medium text-text-primary truncate">{user.user_metadata.display_name}</p>
+                        <p className="text-xs text-text-secondary truncate mt-0.5">{user.email}</p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-medium text-text-primary truncate">{user.email}</p>
+                    )}
                     <p className="text-xs text-text-secondary capitalize mt-0.5">{userRole}</p>
                   </div>
                   
@@ -335,7 +343,12 @@ export default function Navbar({
               <div className="space-y-2">
                 <div className="px-2 py-1">
                   <p className="text-xs text-text-secondary">Signed in as</p>
-                  <p className="text-sm font-medium text-text-primary truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-text-primary truncate">
+                    {user?.user_metadata?.display_name || user.email}
+                  </p>
+                  {user?.user_metadata?.display_name && (
+                    <p className="text-xs text-text-secondary truncate mt-0.5">{user.email}</p>
+                  )}
                 </div>
                 <div className="space-y-1 pl-2">
                   {userRole === "founder" && (
