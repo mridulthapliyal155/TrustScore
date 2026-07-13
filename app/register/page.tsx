@@ -64,17 +64,6 @@ export default function RegisterPage() {
     checkAuth();
   }, [router, supabase]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background text-text-primary">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   const renderFileInput = (
     label: string,
@@ -174,6 +163,18 @@ export default function RegisterPage() {
 
   // Validation Error States
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-text-primary">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // Helper validation routines
   const validateUrl = (url: string) => {
