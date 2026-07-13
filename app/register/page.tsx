@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { createClient } from "@/lib/supabase/client";
 
 // Step type definition
 interface FormStep {
@@ -33,9 +35,46 @@ interface FundingEntry {
 }
 
 export default function RegisterPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [dbError, setDbError] = useState("");
+  const [ownerId, setOwnerId] = useState("");
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth?mode=signin");
+      } else {
+        const userRole = user.user_metadata?.role || user.user_metadata?.user_type;
+        if (userRole !== "founder") {
+          router.push("/directory");
+        } else {
+          setOwnerId(user.id);
+          setLoading(false);
+        }
+      }
+    }
+    checkAuth();
+  }, [router, supabase]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background text-text-primary">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   const renderFileInput = (
     label: string,
@@ -213,15 +252,64 @@ export default function RegisterPage() {
     return Object.keys(stepErrors).length === 0;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (validateCurrentStep()) {
       if (currentStep < STEPS.length - 1) {
         setCurrentStep((prev) => prev + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        // Last step submit
-        setIsSubmitted(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Last step submit - save to Supabase database!
+        setSubmitLoading(true);
+        setDbError("");
+
+        try {
+          const companyData = {
+            owner_id: ownerId,
+            status: "pending",
+            trust_score: null,
+            name: startupName,
+            cin: cin,
+            legal_status: legalStatus,
+            founded_date: foundedDate,
+            sector: sector,
+            description: description,
+            website: website || null,
+            stage: stage,
+            revenue: revenueAmount ? parseFloat(revenueAmount) : null,
+            revenue_currency: revenueCurrency,
+            active_users: activeUsers ? parseInt(activeUsers) : null,
+            growth_rate: growthRate || null,
+            currently_raising: isRaising,
+            externally_funded: isFunded === "yes",
+            incubator: isIncubated === "yes",
+            team_size: teamSize ? parseInt(teamSize) : null,
+            show_score: consentPublic,
+            founders: founders.map(f => ({ name: f.name, linkedin: f.linkedin })),
+            incubators: isIncubated === "yes" ? incubatorNames.filter(name => name.trim() !== "") : [],
+            investors: isFunded === "yes" ? fundingDetails.map(f => ({
+              name: f.investorName,
+              amount: f.amount ? parseFloat(f.amount) : 0,
+              currency: f.currency,
+              round: f.round,
+              date: f.date
+            })) : []
+          };
+
+          const { error } = await supabase.from("companies").insert([companyData]);
+
+          if (error) {
+            setDbError(error.message || "Failed to save company details to database.");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            setIsSubmitted(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        } catch (err: any) {
+          setDbError(err.message || "An unexpected error occurred while saving.");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } finally {
+          setSubmitLoading(false);
+        }
       }
     }
   };
@@ -290,10 +378,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onAuthToggle={() => setIsLoggedIn((prev) => !prev)}
-      />
+      <Navbar />
 
       <main className="flex-1 w-full max-w-[1100px] mx-auto px-4 md:px-6 py-12 flex flex-col gap-8">
         {/* Title Section */}
@@ -305,6 +390,12 @@ export default function RegisterPage() {
             Register your startup to build your TrustScore profile. Please fill out all required fields truthfully.
           </p>
         </div>
+
+        {!isSubmitted && dbError && (
+          <div className="w-full p-4 rounded-lg bg-red-50 border border-red-150 text-danger text-sm font-medium">
+            {dbError}
+          </div>
+        )}
 
         {isSubmitted ? (
           /* Success Screen Card */
@@ -1113,8 +1204,12 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handleContinue}
-                  className="h-9 px-5 bg-accent hover:bg-accent/90 text-surface rounded-button text-sm font-medium transition-colors cursor-pointer select-none"
+                  disabled={submitLoading}
+                  className="h-9 px-5 bg-accent hover:bg-accent/90 text-surface rounded-button text-sm font-medium transition-colors cursor-pointer select-none flex items-center gap-2 disabled:bg-opacity-50 disabled:cursor-not-allowed"
                 >
+                  {submitLoading ? (
+                    <span className="w-3.5 h-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin"></span>
+                  ) : null}
                   {currentStep === STEPS.length - 1 ? "Submit" : "Continue"}
                 </button>
               </div>
