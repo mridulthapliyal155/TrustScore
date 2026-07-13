@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -32,6 +32,7 @@ export default function Navbar({
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Products dropdown state
   const [internalProductsOpen, setInternalProductsOpen] = useState(false);
@@ -81,6 +82,10 @@ export default function Navbar({
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
       if (target && target.closest && target.closest(".preview-control")) {
+        return;
+      }
+      // Do not close dropdown if click is inside the dropdown container
+      if (profileMenuRef.current && profileMenuRef.current.contains(target)) {
         return;
       }
       setProductsOpen(false);
@@ -187,7 +192,7 @@ export default function Navbar({
               </Link>
             </>
           ) : (
-            <div className="relative">
+            <div className="relative" ref={profileMenuRef}>
               <button
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => {
@@ -242,6 +247,13 @@ export default function Navbar({
                         Directory
                       </Link>
                     )}
+                    <Link
+                      href="/reset-password"
+                      onClick={() => setProfileOpen(false)}
+                      className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
+                    >
+                      Reset password
+                    </Link>
                     <button
                       onClick={handleSignOut}
                       className="w-full text-left px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors cursor-pointer focus:outline-hidden"
@@ -353,6 +365,13 @@ export default function Navbar({
                       Directory
                     </Link>
                   )}
+                  <Link
+                    href="/reset-password"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-1.5 text-sm font-medium text-text-primary hover:text-accent transition-colors"
+                  >
+                    Reset password
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="w-full text-left py-1.5 text-sm font-medium text-text-primary hover:text-accent transition-colors cursor-pointer focus:outline-hidden"
