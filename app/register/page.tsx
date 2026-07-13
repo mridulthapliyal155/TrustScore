@@ -293,7 +293,11 @@ export default function RegisterPage() {
               currency: f.currency,
               round: f.round,
               date: f.date
-            })) : []
+            })) : [],
+            coi_filename: coiFile ? coiFile.name : null,
+            financials_filename: financialsFile ? financialsFile.name : null,
+            pitch_deck_filename: pitchDeckFile ? pitchDeckFile.name : null,
+            cap_table_filename: capTableFile ? capTableFile.name : null
           };
 
           const { error } = await supabase.from("companies").insert([companyData]);
