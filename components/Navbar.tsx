@@ -116,7 +116,6 @@ export default function Navbar({
     }
     if (userRole === "founder") {
       return [
-        { label: "Onboard your company", href: "/register" },
         { label: "About", href: "/about" },
         { label: "How it works", href: "/how-it-works" },
       ];
@@ -219,7 +218,7 @@ export default function Navbar({
                     {userRole === "founder" && (
                       <Link
                         href="/dashboard"
-                        onClick={() => setTimeout(() => setProfileOpen(false), 0)}
+                        onClick={() => setProfileOpen(false)}
                         className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                       >
                         Dashboard
@@ -228,16 +227,16 @@ export default function Navbar({
                     {userRole === "founder" && (
                       <Link
                         href="/register"
-                        onClick={() => setTimeout(() => setProfileOpen(false), 0)}
+                        onClick={() => setProfileOpen(false)}
                         className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                       >
-                        Onboard your company
+                        Onboard your startup
                       </Link>
                     )}
                     {userRole === "investor" && (
                       <Link
                         href="/directory"
-                        onClick={() => setTimeout(() => setProfileOpen(false), 0)}
+                        onClick={() => setProfileOpen(false)}
                         className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                       >
                         Directory
@@ -342,7 +341,7 @@ export default function Navbar({
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-1.5 text-sm font-medium text-text-primary hover:text-accent transition-colors"
                     >
-                      Onboard your company
+                      Onboard your startup
                     </Link>
                   )}
                   {userRole === "investor" && (

@@ -81,7 +81,7 @@ export default function DashboardPage() {
               href="/register"
               className="block w-full text-center bg-accent text-surface py-2.5 text-sm font-medium rounded-button hover:bg-opacity-90 active:scale-98 transition-all cursor-pointer shadow-xs focus:outline-hidden"
             >
-              Onboard your company
+              Onboard your startup
             </Link>
           </div>
         </div>
