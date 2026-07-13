@@ -17,6 +17,7 @@ function AuthForm() {
   const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "confirm_sent">(initialMode);
   
   // Form fields
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"founder" | "investor">("founder");
@@ -46,6 +47,7 @@ function AuthForm() {
     setErrorMsg("");
     setSuccessMsg("");
     setPassword("");
+    setFullName("");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -94,6 +96,10 @@ function AuthForm() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim()) {
+      setErrorMsg("Please enter your full name.");
+      return;
+    }
     if (!email || !password) {
       setErrorMsg("Please enter both email and password.");
       return;
@@ -116,6 +122,7 @@ function AuthForm() {
           data: {
             role: role,
             user_type: role,
+            full_name: fullName,
           },
         },
       });
@@ -281,6 +288,24 @@ function AuthForm() {
                   Investor
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Full Name */}
+          {mode === "signup" && (
+            <div className="space-y-1.5 animate-in fade-in duration-100">
+              <label htmlFor="fullName" className="text-xs font-medium text-text-secondary">
+                Full name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Alex Rivera"
+                className="w-full h-[36px] px-3 border border-border-hairline rounded-button text-sm bg-surface text-text-primary placeholder-text-secondary focus:outline-hidden focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+              />
             </div>
           )}
 
