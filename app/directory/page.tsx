@@ -1,176 +1,139 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import StartupCard from "@/components/StartupCard";
-import { StartupCardData } from "@/types/startup";
+import { StartupCardData, BadgeTier } from "@/types/startup";
+import { createClient } from "@/lib/supabase/client";
 
-const mockStartups: StartupCardData[] = [
-  {
-    id: "apex-biosensors",
-    name: "Apex Biosensors",
-    logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&h=128&fit=crop&q=80",
-    description: "Continuous glucose monitoring using non-invasive infrared spectroscopy.",
-    sector: "Healthtech",
-    stage: "Scaling",
-    location: "Boston, MA",
-    foundedYear: 2021,
-    investorCount: 8,
-    fundingRound: "Series A",
-    trustScore: 0.84,
-    badgeTier: "investor-backed",
-    showScore: true,
-  },
-  {
-    id: "velo-logistics",
-    name: "Velo Logistics",
-    logoUrl: "https://images.unsplash.com/photo-1618005198143-e528346d9a59?w=128&h=128&fit=crop&q=80",
-    description: "Last-mile drone delivery network for urgent medical supplies.",
-    sector: "Logistics",
-    stage: "Revenue",
-    location: "Austin, TX",
-    foundedYear: 2022,
-    investorCount: 4,
-    fundingRound: "Seed",
-    trustScore: 0.71,
-    badgeTier: "stakeholder-endorsed",
-    showScore: true,
-  },
-  {
-    id: "nova-carbon",
-    name: "Nova Carbon",
-    logoUrl: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=128&h=128&fit=crop&q=80",
-    description: "Direct air capture systems using novel solid sorbent filters.",
-    sector: "Climate",
-    stage: "MVP",
-    location: "Seattle, WA",
-    foundedYear: 2023,
-    investorCount: 2,
-    fundingRound: "Pre-Seed",
-    trustScore: 0.65,
-    badgeTier: "document-backed",
-    showScore: false,
-  },
-  {
-    id: "solara-analytics",
-    name: "Solara Analytics",
-    logoUrl: "",
-    description: "Predictive maintenance algorithms for utility-scale solar farms.",
-    sector: "Energy",
-    stage: "Idea",
-    location: "Denver, CO",
-    foundedYear: 2024,
-    investorCount: 0,
-    fundingRound: "Pre-Seed",
-    trustScore: 0.48,
-    badgeTier: "self-reported",
-    showScore: true,
-  },
-  {
-    id: "orion-cyber",
-    name: "Orion Cyber",
-    logoUrl: "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=128&h=128&fit=crop&q=80",
-    description: "Decentralized zero-trust endpoint access and threat modeling APIs.",
-    sector: "Cybersecurity",
-    stage: "Scaling",
-    location: "San Francisco, CA",
-    foundedYear: 2020,
-    investorCount: 12,
-    fundingRound: "Series B",
-    trustScore: 0.92,
-    badgeTier: "investor-backed",
-    showScore: true,
-  },
-  {
-    id: "aether-agriculture",
-    name: "Aether Agriculture",
-    logoUrl: "https://images.unsplash.com/photo-1618005198143-e528346d9a59?w=128&h=128&fit=crop&q=80",
-    description: "Automated indoor vertical farming cabinets using aeroponic delivery systems.",
-    sector: "Agtech",
-    stage: "Revenue",
-    location: "Chicago, IL",
-    foundedYear: 2021,
-    investorCount: 5,
-    fundingRound: "Seed",
-    trustScore: 0.76,
-    badgeTier: "document-backed",
-    showScore: true,
-  },
-  {
-    id: "krypton-fin",
-    name: "Krypton Fin",
-    logoUrl: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=128&h=128&fit=crop&q=80",
-    description: "Next-generation credit scoring APIs based on alternative ledger history.",
-    sector: "Fintech",
-    stage: "MVP",
-    location: "New York, NY",
-    foundedYear: 2023,
-    investorCount: 3,
-    fundingRound: "Seed",
-    trustScore: 0.62,
-    badgeTier: "ai-extracted",
-    showScore: true,
-  },
-  {
-    id: "zephyr-materials",
-    name: "Zephyr Materials",
-    logoUrl: "",
-    description: "Biodegradable natural polymers to replace single-use plastics.",
-    sector: "Deeptech",
-    stage: "Idea",
-    location: "Los Angeles, CA",
-    foundedYear: 2025,
-    investorCount: 1,
-    fundingRound: "Pre-Seed",
-    trustScore: 0.54,
-    badgeTier: "self-reported",
-    showScore: true,
-  },
-  {
-    id: "lumen-ai",
-    name: "Lumen AI",
-    logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&h=128&fit=crop&q=80",
-    description: "Edge AI vision processing units for autonomous drone control.",
-    sector: "AI",
-    stage: "Scaling",
-    location: "London, UK",
-    foundedYear: 2022,
-    investorCount: 9,
-    fundingRound: "Series A",
-    trustScore: 0.88,
-    badgeTier: "stakeholder-endorsed",
-    showScore: true,
-  },
-];
+interface CompanyDbRow {
+  id: string;
+  name: string;
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  founded_date: string | null;
+  investors: any[] | null;
+  trust_score: number | null;
+  verification: Record<string, string> | null;
+  show_score: boolean;
+}
 
 export default function DirectoryPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const supabase = createClient();
+  const [companies, setCompanies] = useState<CompanyDbRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedStage, setSelectedStage] = useState("");
 
+  useEffect(() => {
+    async function fetchApprovedCompanies() {
+      try {
+        const { data, error } = await supabase
+          .from("companies")
+          .select("id, name, description, sector, stage, founded_date, investors, trust_score, verification, show_score")
+          .eq("status", "approved");
+
+        if (error) {
+          setErrorMsg(error.message);
+        } else {
+          setCompanies(data || []);
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || "Failed to load directory data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchApprovedCompanies();
+  }, [supabase]);
+
+  // Client-side filtering logic
+  const filteredCompanies = companies.filter((company) => {
+    const nameText = company.name || "";
+    const descText = company.description || "";
+    
+    const matchesSearch =
+      nameText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      descText.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesSector =
+      !selectedSector ||
+      (company.sector || "").toLowerCase() === selectedSector.toLowerCase();
+
+    const matchesStage =
+      !selectedStage ||
+      (company.stage || "").toLowerCase() === selectedStage.toLowerCase();
+
+    return matchesSearch && matchesSector && matchesStage;
+  });
+
+  // Extract unique sectors and stages for filter dropdowns (based on approved companies in DB)
+  const availableSectors = Array.from(
+    new Set(
+      companies
+        .map((c) => c.sector)
+        .filter((sector): sector is string => !!sector)
+    )
+  ).sort();
+
+  const availableStages = Array.from(
+    new Set(
+      companies
+        .map((c) => c.stage)
+        .filter((stage): stage is string => !!stage)
+    )
+  ).sort();
+
+  const mapToCardData = (company: CompanyDbRow): StartupCardData => {
+    return {
+      id: company.id,
+      name: company.name,
+      logoUrl: "",
+      description: company.description || "",
+      sector: company.sector || "",
+      stage: company.stage || "",
+      location: "India",
+      foundedYear: company.founded_date ? new Date(company.founded_date).getFullYear() : 2026,
+      investorCount: (company.investors || []).length,
+      fundingRound: (company.investors || [])[0]?.round || company.stage || "Pre-Seed",
+      trustScore: company.trust_score !== null ? company.trust_score : 0,
+      badgeTier: (company.verification?.cin || "self-reported") as BadgeTier,
+      showScore: company.show_score,
+    };
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background text-text-primary">
       {/* Top Navigation */}
-      <Navbar
-        isLoggedIn={isLoggedIn}
-        onAuthToggle={() => setIsLoggedIn((prev) => !prev)}
-      />
+      <Navbar />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-[1100px] mx-auto px-4 md:px-6 py-12 flex flex-col gap-10">
+      <main className="flex-1 w-full max-w-[1100px] mx-auto px-4 md:px-6 py-12 flex flex-col gap-8">
         {/* Page Header */}
         <div className="flex flex-col gap-3">
           <h1 className="text-3xl font-medium tracking-tight text-text-primary">
             Startup Directory
           </h1>
-          <p className="text-base text-text-secondary max-w-2xl leading-relaxed">
+          <p className="text-sm text-text-secondary max-w-2xl leading-relaxed">
             Explore verified early-stage startups. Discover details about sector, staging, funding rounds, and their computed TrustScore credibility rating.
           </p>
         </div>
 
-        {/* Visual-only Filter Row */}
+        {errorMsg && (
+          <div className="bg-[#FFF5F5] border border-[#FFD8D8] text-danger text-xs p-4 rounded-card">
+            <p className="font-semibold">Error Loading Directory</p>
+            <p className="mt-1 font-normal text-text-secondary">{errorMsg}</p>
+          </div>
+        )}
+
+        {/* Filter Row */}
         <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center w-full bg-surface border border-border-hairline rounded-card p-4 shadow-xs">
           {/* Search Input */}
           <div className="relative flex-1">
@@ -180,7 +143,6 @@ export default function DirectoryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-9 border border-border-hairline rounded-button bg-surface pl-9 pr-3 text-sm text-text-primary placeholder:text-text-secondary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent"
-              disabled
             />
             <svg
               className="absolute left-3 top-2.5 w-4 h-4 text-text-secondary"
@@ -201,42 +163,87 @@ export default function DirectoryPage() {
           <select
             value={selectedSector}
             onChange={(e) => setSelectedSector(e.target.value)}
-            className="h-9 border border-border-hairline rounded-button bg-surface px-3 text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent cursor-not-allowed"
-            disabled
+            className="h-9 border border-border-hairline rounded-button bg-surface px-3 text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent cursor-pointer"
           >
-            <option value="">Sector</option>
-            <option value="healthtech">Healthtech</option>
-            <option value="logistics">Logistics</option>
-            <option value="climate">Climate</option>
-            <option value="energy">Energy</option>
-            <option value="cybersecurity">Cybersecurity</option>
-            <option value="agtech">Agtech</option>
-            <option value="fintech">Fintech</option>
-            <option value="deeptech">Deeptech</option>
-            <option value="ai">AI</option>
+            <option value="">Sector (All)</option>
+            {availableSectors.length > 0 ? (
+              availableSectors.map((sec) => (
+                <option key={sec} value={sec}>{sec}</option>
+              ))
+            ) : (
+              <>
+                <option value="healthtech">Healthtech</option>
+                <option value="logistics">Logistics</option>
+                <option value="climate">Climate</option>
+                <option value="energy">Energy</option>
+                <option value="cybersecurity">Cybersecurity</option>
+                <option value="agtech">Agtech</option>
+                <option value="fintech">Fintech</option>
+                <option value="deeptech">Deeptech</option>
+                <option value="ai">AI</option>
+              </>
+            )}
           </select>
 
           {/* Stage Dropdown */}
           <select
             value={selectedStage}
             onChange={(e) => setSelectedStage(e.target.value)}
-            className="h-9 border border-border-hairline rounded-button bg-surface px-3 text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent cursor-not-allowed"
-            disabled
+            className="h-9 border border-border-hairline rounded-button bg-surface px-3 text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent cursor-pointer"
           >
-            <option value="">Stage</option>
-            <option value="idea">Idea</option>
-            <option value="mvp">MVP</option>
-            <option value="revenue">Revenue</option>
-            <option value="scaling">Scaling</option>
+            <option value="">Stage (All)</option>
+            {availableStages.length > 0 ? (
+              availableStages.map((stg) => (
+                <option key={stg} value={stg}>{stg}</option>
+              ))
+            ) : (
+              <>
+                <option value="idea">Idea</option>
+                <option value="mvp">MVP</option>
+                <option value="revenue">Revenue</option>
+                <option value="scaling">Scaling</option>
+              </>
+            )}
           </select>
         </div>
 
-        {/* Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockStartups.map((startup, index) => (
-            <StartupCard key={index} startup={startup} />
-          ))}
-        </div>
+        {/* Results Section */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : companies.length === 0 ? (
+          <div className="bg-surface border border-border-hairline rounded-card p-12 text-center">
+            <svg
+              className="w-12 h-12 text-text-secondary/40 mx-auto stroke-current fill-none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h3 className="text-base font-semibold text-text-primary mt-4">No startups are currently in the directory</h3>
+            <p className="text-xs text-text-secondary mt-1">Startups will appear here once their submissions are approved by our review team.</p>
+          </div>
+        ) : filteredCompanies.length === 0 ? (
+          <div className="bg-surface border border-border-hairline rounded-card p-12 text-center">
+            <svg
+              className="w-12 h-12 text-text-secondary/40 mx-auto stroke-current fill-none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <h3 className="text-base font-semibold text-text-primary mt-4">No startups found matching your filters</h3>
+            <p className="text-xs text-text-secondary mt-1">Try resetting your sector, stage, or typing a different search term.</p>
+          </div>
+        ) : (
+          /* Responsive Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCompanies.map((company) => (
+              <StartupCard key={company.id} startup={mapToCardData(company)} />
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Footer Layout */}

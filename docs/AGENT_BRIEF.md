@@ -1,34 +1,39 @@
 # TrustScore AI — Agent Brief
 
 This file is the build contract for the project. Read it together with DESIGN.md
-(in the same folder) before doing any work. DESIGN.md owns all visual decisions;
-this file owns stack, structure, data, and build order. When the two overlap,
-DESIGN.md wins on anything visual.
+(same folder) before doing any work. DESIGN.md owns all visual decisions; this file
+owns product logic, data, structure, and build order. When they overlap, DESIGN.md
+wins on anything visual.
+
+This brief reflects the current, settled decisions. Where earlier ideas were changed,
+only the current decision is stated here.
 
 ---
 
 ## 1. What we are building
 
-A startup validation platform with two user types:
+A two-sided startup validation platform.
 
-- **Founders** build a credibility profile and receive a TrustScore.
-- **Investors** review startups, filter them, and track ones they have backed.
+- **Founders** register their startup, submit claims, and optionally upload evidence.
+  Their startup gets a verified credibility profile and a TrustScore.
+- **Investors / VCs** browse startups they can trust, because every claim shows how
+  strongly it is backed by evidence.
 
-The core idea: every claim a founder makes carries a verification level, so a
-score is never a bare number. It is always paired with the evidence behind it.
+Differentiator vs. plain directories (e.g. YNOS): TrustScore grades not just *what* a
+startup claims, but *how well each claim is verified*. A score is never a bare number;
+it is always paired with a verification badge. India-first (CIN, ₹).
 
 ---
 
 ## 2. Stack (do not substitute without asking)
 
-- **Framework:** Next.js, app router
-- **Styling:** Tailwind CSS, tokens driven from DESIGN.md
-- **Database + auth:** Supabase (hosted Postgres with built-in auth)
+- **Framework:** Next.js, app router (v16), TypeScript
+- **Styling:** Tailwind CSS, tokens from DESIGN.md
+- **Database + auth:** Supabase (Postgres + Auth), @supabase/ssr client helpers
 - **Deployment target:** Vercel
-- **Language:** TypeScript
 
-Keep dependencies minimal. Do not add state libraries, UI kits, or extra services
-that are not listed here unless asked.
+Keep dependencies minimal. Do not add state libraries, UI kits, or extra services not
+listed here unless asked.
 
 ---
 
@@ -36,8 +41,8 @@ that are not listed here unless asked.
 
 ```
 /app            Next.js routes (app router)
-/components     Shared UI primitives (nav, card, button, input, badge)
-/lib            Supabase client, helpers, score logic
+/components     Shared UI (navbar, footer, card, badge, inputs, buttons)
+/lib            Supabase clients, helpers, scoring logic
 /types          Shared TypeScript types
 /docs           DESIGN.md, AGENT_BRIEF.md
 /public         Static assets, logo
@@ -45,222 +50,209 @@ that are not listed here unless asked.
 
 ---
 
-## 4. Build order (follow in sequence)
+## 4. Verification ladder (core mechanism)
 
-1. **Scaffold + tokens.** Set up the Next.js + Tailwind project. Translate the
-   DESIGN.md color, radius, border, and typography tokens into the Tailwind config
-   and global CSS variables. No pages or features yet.
-2. **Shared primitives.** Build the reusable pieces used on every screen: top nav
-   bar, card, primary/secondary button, input, and the verification badge
-   component (all five tiers). These must match DESIGN.md exactly.
-3. **Spine with mock data.** Founder registration (6-step form) then the score +
-   badge display then the investor directory. Use mock data so the flow is
-   demoable before persistence exists.
-4. **Persistence + auth.** Wire the registration form to Supabase, add founder and
-   investor login, enforce the field visibility rules in section 7.
-5. **Prove-it features.** CIN registry check, document uploads that raise a claim's
-   verification tier, and the "backed by N investors" signal.
+Every claim carries a verification tier, weakest to strongest (render identically
+everywhere, per DESIGN.md):
 
-Always show an implementation plan before writing files. Commit after each step
-with a clear message.
+1. **Self-reported** — grey dot. Founder stated it, no proof.
+2. **AI-extracted** — blue dot. AI checked/pulled it from a source.
+3. **Document-backed** — half-filled dot. Supported by an uploaded document.
+4. **Stakeholder-endorsed** — green check. A credible third party (incubator) vouches.
+5. **Investor-backed** — deep blue check. Highest; a real investor committed capital.
 
----
-
-## 5. Founder registration form (6 steps)
-
-Each field lists: input type, required or optional, highest verification tier it
-can reach, and default visibility.
-
-### Step 1 — Basics
-| Field | Type | Req | Tier | Visibility |
-|---|---|---|---|---|
-| Registered start-up name | text | yes | document-backed | public |
-| Brand / popular name | text | no | self-reported | public |
-| CIN | text | yes | investor-backed via registry | public |
-| Legal status | select (proprietorship / pvt ltd / llp / other) | yes | document-backed | public |
-| Founded date | date | yes | document-backed | public |
-| Sector / industry | select | yes | self-reported | public |
-| One-line description | text (max 300) | yes | self-reported | public |
-| Website | url | no | self-reported | public |
-
-### Step 2 — Founders
-| Field | Type | Req | Tier | Visibility |
-|---|---|---|---|---|
-| Founder name(s) | repeatable text | yes | stakeholder-endorsed | public |
-| LinkedIn URL per founder | url | yes | stakeholder-endorsed | public |
-| Team size | number | no | self-reported | public |
-
-### Step 3 — Stage and traction
-| Field | Type | Req | Tier | Visibility |
-|---|---|---|---|---|
-| Stage | select (idea / mvp / revenue / scaling) | yes | self-reported | public |
-| Revenue (MRR or ARR) | number + currency | no | document-backed | shared-link only |
-| Active users / customers | number | no | document-backed | shared-link only |
-| Growth rate | text | no | document-backed | shared-link only |
-
-### Step 4 — Endorsements
-| Field | Type | Req | Tier | Visibility |
-|---|---|---|---|---|
-| Part of incubator/accelerator? | yes/no | yes | stakeholder-endorsed | public |
-| Incubator/accelerator name(s) | repeatable text | conditional | stakeholder-endorsed | public |
-| Externally funded? | yes/no | yes | investor-backed | public |
-| Investor detail (name, amount, round, date) | repeatable group | conditional | investor-backed | shared-link only |
-| Currently raising? | select (yes / no / planning) | yes | self-reported | public |
-
-### Step 5 — Evidence (per-claim uploads)
-| Field | Type | Effect |
-|---|---|---|
-| Certificate of incorporation | file | raises CIN and basics to document-backed |
-| Financials / revenue proof | file | raises traction to document-backed |
-| Pitch deck | file | self-reported |
-| Cap table | file | document-backed, private by default |
-
-### Step 6 — Consent and visibility
-| Field | Type | Notes |
-|---|---|---|
-| Field-level visibility toggle | per sensitive field | public / shared-link / private |
-| Consent to display to investors | checkbox | required to publish |
-| Submitter contact (name, email, phone) | text | private, never shown on profile |
+**Critical rules:**
+- Tiers are NOT auto-computed from whether a field is filled. Every claim DEFAULTS to
+  **self-reported**. Tiers are raised only by admin review (human now, AI later),
+  stored on the company row.
+- Verification is displayed **per individual claim**, not grouped by category.
+- Never show a score without its badge. No bare numbers.
+- Do not claim registry-level verification anywhere in the UI (we do not verify CIN
+  against a government registry).
 
 ---
 
-## 6. Verification tiers (from DESIGN.md — render identically everywhere)
+## 5. Scoring model & AI role
 
-Lowest to highest:
+- **Score** rises as claims get verified (weighted by tier). Founders raise it by
+  proving claims, never by adding unproven ones.
+- **Score scale:** stored 0–1 in the DB, displayed as a 0–100 whole number
+  (Math.round(score * 100)). Identical on every screen. Never show the raw decimal.
+- **The founder NEVER sets or sees a self-assigned score.** No score field exists in
+  registration. The system/admin computes it.
+- **Right now, all verification and scoring is done by a human via the admin portal.**
+  AI is a later addition.
+- **AI role (later):** (1) evaluate documents and privately coach the OWNER on how to
+  improve their score — shown only in the owner's own profile, never publicly; (2)
+  propose tiers/score for the admin to confirm. AI may check things like CIN format or
+  LinkedIn existence → AI-extracted tier.
 
-1. Self-reported — grey dot
-2. AI-extracted — blue dot
-3. Document-backed — half-filled dot
-4. Stakeholder-endorsed — green check
-5. Investor-backed — deep blue check
+---
 
-Hard rule: never display a score without its tier badge. No bare numbers.
+## 6. Review pipeline & status
 
-## 6a. Score scale
+Nothing goes public until reviewed. Every company has a status (strings use
+underscores): **pending → under_review → approved / rejected**.
 
-The TrustScore is stored as a 0 to 1 value (e.g. 0.84). It is always displayed
-scaled to a 0 to 100 whole number (0.84 shows as 84), using Math.round(score * 100)
-at render time. The stored value never changes, only the display is scaled. Never
-show the raw decimal to users. This scaling is identical on every screen (card,
-profile, anywhere a score appears).
-
-## 6b. Scoring model (weighted verification)
-
-The score rises as a founder's claims get verified. Each claim sits at a verification
-tier, and higher tiers contribute more weight to the score:
-
-- self-reported: lowest weight (typed, unproven)
-- AI-extracted: low-mid (AI pulled it from a provided source)
-- document-backed: mid (supporting document uploaded)
-- stakeholder-endorsed: high (credible third party vouches)
-- investor-backed: highest (an investor committed capital)
-
-The score is a weighted function of how verified each claim is. A founder raises their
-score by proving claims (moving them up tiers), not by adding more unproven claims.
-The formula is real and explainable: tier weights summed across claims, normalized to
-0 to 1. Keep the weighting logic in /lib so it is testable and can be shown to judges.
-
-## 6c. AI role
-
-The AI has two jobs:
-
-1. Document evaluation and owner coaching. When a founder uploads a document (deck,
-   incorporation certificate, financials), the AI reads it, extracts relevant claims,
-   and assigns/updates verification tiers. In the founder's OWN profile (owner view
-   only) it advises what is missing and how to improve the score (e.g. "revenue is
-   self-reported, upload financials to make it document-backed"). This coaching is
-   PRIVATE to the founder and never appears on the public/visitor profile or in the
-   directory.
-2. Score calculation. Turn the verified tiers into the number per section 6b.
-
-Hackathon scope note: the scoring formula and the AI coaching are fully real and
-demoable. Full document authenticity checking against external registries is a
-post-hackathon feature. For the demo, the AI reads the uploaded document and assigns
-a tier based on a document being provided for the claim, plus extracted content. Do
-not overclaim registry-level verification in the UI.
-
-## 6c-1. Review pipeline and status
-
-Nothing goes public until reviewed. Every startup has a status:
-
-- **pending** — just submitted, not yet evaluated.
-- **under review** — AI has evaluated and proposed a score and tiers; a human is
-  cross-checking.
-- **approved** — human confirmed; the startup goes live in the directory with its score.
-- **rejected** — did not pass; not shown publicly. The founder sees this status in
-  their own owner view.
+- pending: just submitted.
+- under_review: being checked.
+- approved: live in the directory with its score.
+- rejected: not shown publicly; founder sees this in their own view.
 
 Rules:
-- The public directory shows ONLY approved startups.
-- After registration the founder is (once auth exists) auto-logged-in and lands on
-  their owner profile, which shows the company data and the current status. The
-  registration success screen is the founder's first view of their under-review profile.
-- The score is proposed by the AI during "under review" and finalized by the human at
-  "approved". No score is computed or shown at submission time.
-- Real review takes 10 to 15 days. For the demo, status is toggleable (via the admin
-  view or a mock control) so the full lifecycle can be shown in seconds.
-
-## 6d. Owner vs visitor profile views
-
-The profile page renders two ways based on an ownership check (is the logged-in user
-the profile owner?):
-
-- Owner view: full data, edit controls per section, private fields, the AI coaching,
-  and the founder always sees their own score regardless of the consent flag.
-- Visitor view (investors, anyone else): read-only, no edit controls, public fields
-  only, no AI coaching, submitter contact never shown, and the score consent flag
-  applies (locked state if the founder chose not to show the score).
-
-Ownership depends on auth (backend step). Until auth exists, build both views behind
-a mock owner/visitor toggle, same pattern as the navbar auth toggle.
+- Public directory / profiles show ONLY approved companies to visitors (enforced by RLS).
+- Score is set at approval, never at submission. No score computed or shown at submit.
+- Real review takes 10–15 days (told to users). For the demo, status is changed via the
+  admin portal (or manually in Supabase until the admin portal exists).
 
 ---
 
-## 7. Consent rule (single flag)
+## 7. Consent & sharing (single flag)
 
-There is one consent flag: whether the founder consents to display their TrustScore.
-
-- **Consent yes:** the card and profile show the score with its verification badge.
-- **Consent no:** the founder still appears in the directory. The score slot renders
-  a locked/hidden state (e.g. a lock icon with muted "Score not shared" text), never
-  a number, a zero, or a blank. It must read as a deliberate choice, not an error.
-
-No directory-level consent and no field-level visibility ladder. Submitter contact
-(name, email, phone) is always private and never shown, but that is a fixed rule,
-not a founder-controlled setting.
-
-## 7a. Directory card spec
-
-The compact card shown in the investor directory. Its only job is the click/skip
-decision, so keep it light. Fields:
-
-1. Logo + startup name
-2. One-line description
-3. TrustScore + verification badge (the anchor; locked state if consent is no)
-4. Sector tag + stage
-5. Location + founded year
-6. Investor count + funding round
-7. "Open Profile" link
-
-Everything else (founder scores, revenue stats, incubators, investors, financing,
-performance metrics, ratings, similar startups) lives on the full profile page, not
-the card.
+- One consent flag: **show_score** — show the TrustScore publicly or hide it.
+- Hidden: the company still appears; the score slot shows a locked "Score not shared"
+  state (never a number, zero, or blank), reading as deliberate, not an error.
+- Founders control this via a functional **"Manage sharing"** button in their OWN
+  profile (owner view only), which updates show_score in Supabase.
+- No field-level visibility ladder. Submitter/founder private contact is never shown to
+  visitors (fixed rule, not a founder setting).
 
 ---
 
-## 8. Demo-critical path (build and polish these first)
+## 8. Users, accounts & ownership
 
-Founder registration flow → score + verification badge display → investor directory.
-These three are what the demo shows. Everything in section 4 step 5 is valuable but
-must not come at the cost of this path working cleanly.
+- Two user types chosen at signup via an "I am a" toggle: **Founder** or **Investor**,
+  stored in Supabase user metadata as `role`.
+- Founder's name stored in user metadata as **display_name**.
+- **Two separate registrations:** (1) user account (auth), (2) company registration
+  form. On company submit, the company links to the user via `owner_id`.
+- Email confirmation is **ON** (kept for security). Signup shows a "check your email"
+  screen; `/auth/callback` completes confirmation and redirects by role (founder →
+  /dashboard, investor → /directory). Redirect URLs must be allow-listed in Supabase.
+- **Investor vouching** (investor confirms backing → investor-backed tier) is a LATER
+  feature. Accounts support it; the feature is deferred.
+- **Admin** is a future role needed for the admin portal; admin actions must be
+  restricted server-side to admin accounts only.
 
 ---
 
-## 9. Rules for the agent
+## 9. Company registration form
+
+Route `/register`. Multi-step. Only signed-in founders (else redirect to /auth).
+Collects all info during registration (including optional document uploads).
+
+Steps: Basics (name, CIN, legal_status, founded_date, sector, description, website),
+Founders (name + LinkedIn, repeatable; team_size), Stage & traction (stage, revenue +
+currency, active_users, growth_rate), Endorsements (incubator yes/no + names,
+externally_funded yes/no + investor details repeatable, currently_raising), Evidence
+(optional uploads: certificate of incorporation, financials, pitch deck, cap table),
+Consent (single show_score toggle).
+
+- NO score field anywhere. Saves to the companies table with owner_id set, status
+  'pending', trust_score null.
+- Uploads: currently only the filename is stored (coi_filename, etc.). Actual file
+  storage (Supabase Storage) is a later task.
+
+---
+
+## 10. Database — companies table
+
+Table `public.companies`, RLS enabled.
+
+Columns:
+- id (uuid pk), owner_id (uuid → auth.users), status (text default 'pending', check:
+  pending/under_review/approved/rejected), created_at, trust_score (numeric, nullable —
+  set at approval, never by founder)
+- Flat: name, cin, legal_status, founded_date, sector, description, website, stage,
+  revenue, revenue_currency, active_users, growth_rate, currently_raising,
+  externally_funded (bool), incubator (bool), team_size, show_score (bool)
+- JSON: founders ([{name, linkedin}]), incubators ([names]), investors
+  ([{name, amount, currency, round, date}])
+- Document filenames: coi_filename, financials_filename, pitch_deck_filename,
+  cap_table_filename (name only; real file storage is later)
+- (Future) a verification field (likely JSON) storing per-claim tiers set by admin.
+
+RLS policies:
+- Insert only with your own owner_id.
+- Select/update your own companies (owner_id = auth.uid()).
+- Anyone can select companies where status = 'approved'.
+
+---
+
+## 11. Owner vs visitor profile views
+
+The profile page (`/startup/[id]`) renders two ways based on a REAL auth ownership
+check (signed-in user id === owner_id):
+
+- **Owner view:** full data, edit controls (mostly visual for now), status shown
+  prominently, private contact (email), the "Manage sharing" control, and the (dummy
+  for now) AI coaching section. Owner always sees their own score regardless of consent.
+- **Visitor view:** read-only, public info, founder identity (name + LinkedIn) visible,
+  no private contact, a "Contact founder" button, and the show_score consent flag
+  applied (locked state if hidden).
+
+A non-owner viewing a non-approved company sees a "profile unavailable" state (RLS
+enforces this at the data layer). The owner can view their own company at any status.
+
+---
+
+## 12. Security conventions (apply to all code)
+
+Security is first-class — the product handles founder data, investor identities,
+documents, and trust signals.
+
+- Secrets only in .env.local (gitignored). Never hardcode keys. service_role key never
+  in client code; only the anon key client-side.
+- RLS is the real protection; UI redirects are UX, not security. Every table has RLS,
+  default deny, least privilege.
+- Never trust the client; authorize via RLS/server. Users read/write only their own
+  data; public reads limited to approved records.
+- Keep email confirmation on; allow-list redirect URLs.
+- Private fields (submitter contact, etc.) never leak to visitor views — this is a
+  security boundary.
+- Uploaded documents are sensitive; gate with storage policies when real storage lands.
+- Parameterized queries; validate/sanitize all input.
+- Admin actions (approve, set score/tiers) restricted to admin accounts, checked
+  server-side.
+- Fail safe: when unsure whether a viewer may see something, show less.
+- When instructing the agent, state security requirements explicitly (RLS, ownership
+  checks, no secrets) rather than assuming them.
+
+---
+
+## 13. Build status
+
+Built: scaffold + tokens; shared components (navbar with real auth/role state, footer,
+card, verification badge); static pages (home, about, how-it-works, contact); directory
+(still on MOCK data); company registration (saves to Supabase, linked to founder); auth
+(email/password, founder/investor toggle, email confirmation, callback, reset password;
+Google removed); founder dashboard (real data — user info + their companies + status +
+links); company profile (real data, owner/visitor via real auth, all tiers
+self-reported, functional Manage sharing, evidence filenames, score states); Supabase
+connected, companies table + RLS + filename columns.
+
+Next, in order:
+1. Wire the **directory** to real approved companies (replace mock cards).
+2. **Admin / review portal** — approve/reject (set status), set per-claim tiers, set
+   the TrustScore. Needs an admin role and a verification field on companies. Highest-
+   value remaining piece.
+3. **AI assist** (later) — propose tiers/score for admin to confirm; owner coaching.
+4. **Investor vouching** (later).
+5. **Real document storage** (Supabase Storage) for admin review of files.
+
+---
+
+## 14. Rules for the agent
 
 - Defer to DESIGN.md for all color, type, spacing, and component decisions.
-- Sentence case on all labels, buttons, and headings. No title case, no all caps.
-- No em-dashes in UI copy or content.
-- Show an implementation plan before writing files.
-- Commit after each build step with a clear message.
-- Keep the stack lean. Ask before adding any dependency not listed in section 2.
+- Title case for nav links, buttons, and headings; sentence case for body/helper text.
+  Never ALL CAPS. (This matches DESIGN.md.)
+- Reuse existing components; do not rebuild the navbar, footer, card, or badge.
+- When given a Stitch design image, match the layout but use DESIGN.md tokens and reuse
+  existing components — never paste raw Stitch output/colors, and omit any fields the
+  data model does not actually contain.
+- Default all verification tiers to self-reported; never auto-derive tiers from field
+  presence.
+- Show an implementation plan before writing files. Commit after each step.
+- Keep the stack lean; ask before adding any dependency not in section 2.
+- Follow the security conventions in section 12; state them explicitly in work.

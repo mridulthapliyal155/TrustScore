@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import VerificationBadge from "@/components/VerificationBadge";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { BadgeTier } from "@/types/startup";
 
 interface FounderEntry {
   name: string;
@@ -51,6 +52,7 @@ interface Company {
   financials_filename: string | null;
   pitch_deck_filename: string | null;
   cap_table_filename: string | null;
+  verification?: Record<string, string> | null;
 }
 
 interface PageProps {
@@ -177,14 +179,14 @@ export default function StartupProfilePage({ params }: PageProps) {
   const foundedYear = company.founded_date ? new Date(company.founded_date).getFullYear() : "N/A";
 
   // Every claim defaults to self-reported. Admin review will set real tiers later.
+  const dbVerification = company.verification || {};
   const claims = {
-    basics: "self-reported" as const,
-    founders: "self-reported" as const,
-    traction: "self-reported" as const,
-    endorsements: "self-reported" as const,
-    funding: "self-reported" as const,
+    basics: (dbVerification.cin || "self-reported") as BadgeTier,
+    founders: (dbVerification.founders || "self-reported") as BadgeTier,
+    traction: (dbVerification.revenue || "self-reported") as BadgeTier,
+    endorsements: (dbVerification.incubator || "self-reported") as BadgeTier,
+    funding: (dbVerification.funding || "self-reported") as BadgeTier,
   };
-  const badgeTier = "self-reported";
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("en-US", {
@@ -303,7 +305,6 @@ export default function StartupProfilePage({ params }: PageProps) {
                       {company.trust_score !== null ? Math.round(company.trust_score * 100) : "Not yet scored"}
                     </span>
                   </div>
-                  {company.trust_score !== null && <VerificationBadge tier={badgeTier} />}
                   
                   {/* Manage Sharing gear button */}
                   <button
@@ -332,7 +333,6 @@ export default function StartupProfilePage({ params }: PageProps) {
                           {Math.round(company.trust_score * 100)}
                         </span>
                       </div>
-                      <VerificationBadge tier={badgeTier} />
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 px-3 py-2 bg-[#FAFAF8] border border-border-hairline rounded-button text-text-secondary">

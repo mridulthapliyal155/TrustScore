@@ -5,7 +5,7 @@ A startup validation platform. Two user types: founders (build a credibility pro
 
 ## Layout
 - Responsive web app. Desktop-first, must collapse cleanly to one column on mobile.
-- Shared top navigation bar on every authenticated screen: logo left, nav links center, profile/avatar right.
+- Shared top navigation bar on every authenticated screen: logo left, nav links, profile/avatar right.
 - Generous whitespace. Clarity over density.
 - Max content width ~1100px, centered.
 
@@ -22,7 +22,7 @@ A startup validation platform. Two user types: founders (build a credibility pro
 
 ## Typography
 - Sans-serif, modern, high legibility (Inter or similar).
-- Title case for nav links, buttons, and headings (e.g., "For Founders", "Log In"). Never ALL CAPS. Body and helper text stays sentence case.
+- Title case for nav links, buttons, and headings (e.g. "For Founders", "Log In"). Never ALL CAPS. Body and helper text stays sentence case.
 - Two weights: regular (400) and medium (500). No bold-heavy headers.
 
 ## Components
