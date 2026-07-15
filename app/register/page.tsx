@@ -54,7 +54,7 @@ export default function RegisterPage() {
       } else {
         const userRole = user.user_metadata?.role || user.user_metadata?.user_type;
         if (userRole !== "founder") {
-          router.push("/directory");
+          router.push("/dashboard");
         } else {
           setOwnerId(user.id);
           setLoading(false);

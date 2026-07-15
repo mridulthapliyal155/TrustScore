@@ -79,10 +79,8 @@ function AuthForm() {
 
       if (data?.user) {
         const userRole = data.user.user_metadata?.role || data.user.user_metadata?.user_type;
-        if (userRole === "founder") {
+        if (userRole === "founder" || userRole === "investor") {
           router.push("/dashboard");
-        } else if (userRole === "investor") {
-          router.push("/directory");
         } else {
           router.push("/");
         }

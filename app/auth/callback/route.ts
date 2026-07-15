@@ -13,10 +13,8 @@ export async function GET(request: Request) {
     if (!error && data?.user) {
       const userRole = data.user.user_metadata?.role || data.user.user_metadata?.user_type;
       
-      if (userRole === "founder") {
+      if (userRole === "founder" || userRole === "investor") {
         return NextResponse.redirect(`${origin}/dashboard`);
-      } else if (userRole === "investor") {
-        return NextResponse.redirect(`${origin}/directory`);
       }
       
       return NextResponse.redirect(`${origin}${next}`);

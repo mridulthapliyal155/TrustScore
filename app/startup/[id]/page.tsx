@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import VerificationBadge from "@/components/VerificationBadge";
@@ -61,6 +62,7 @@ interface PageProps {
 
 export default function StartupProfilePage({ params }: PageProps) {
   const { id } = React.use(params);
+  const router = useRouter();
   const supabase = createClient();
 
   const [user, setUser] = useState<User | null>(null);
@@ -68,6 +70,23 @@ export default function StartupProfilePage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [savingSharing, setSavingSharing] = useState(false);
+
+  // Vouch Modal States
+  const [showVouchModal, setShowVouchModal] = useState(false);
+  const [vouchSuccess, setVouchSuccess] = useState(false);
+  const [vouchRound, setVouchRound] = useState("");
+  const [vouchAmount, setVouchAmount] = useState("");
+  const [vouchCurrency, setVouchCurrency] = useState("INR");
+  const [vouchInvestedOn, setVouchInvestedOn] = useState("");
+  const [vouchInvestorNote, setVouchInvestorNote] = useState("");
+  const [vouchProofFilename, setVouchProofFilename] = useState<string | null>(null);
+
+  // Vouch Validation / Submission Errors
+  const [vouchErrors, setVouchErrors] = useState({
+    round: "",
+    general: "",
+  });
+  const [vouchSubmitting, setVouchSubmitting] = useState(false);
 
   useEffect(() => {
     async function fetchCompanyAndUser() {
@@ -135,6 +154,90 @@ export default function StartupProfilePage({ params }: PageProps) {
     }
   };
 
+  const handleVouchClick = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile, error } = await supabase
+        .from("investor_profiles")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        setVouchErrors((prev) => ({ ...prev, general: "Failed to verify investor status: " + error.message }));
+        return;
+      }
+
+      if (!profile) {
+        router.push("/investor/register?notice=profile_required");
+        return;
+      }
+
+      setShowVouchModal(true);
+      setVouchSuccess(false);
+      setVouchRound("");
+      setVouchAmount("");
+      setVouchCurrency("INR");
+      setVouchInvestedOn("");
+      setVouchInvestorNote("");
+      setVouchProofFilename(null);
+      setVouchErrors({ round: "", general: "" });
+    } catch (err: any) {
+      setVouchErrors((prev) => ({ ...prev, general: err.message || "An unexpected error occurred." }));
+    }
+  };
+
+  const handleVouchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !company) return;
+
+    setVouchErrors({ round: "", general: "" });
+
+    const trimmedRound = vouchRound.trim();
+    if (!trimmedRound) {
+      setVouchErrors((prev) => ({ ...prev, round: "Round name is required." }));
+      return;
+    }
+
+    setVouchSubmitting(true);
+
+    // Normalise round by trim and lowercase before insert
+    const normalisedRound = trimmedRound.toLowerCase();
+
+    const payload = {
+      investor_id: user.id,
+      company_id: company.id,
+      round: normalisedRound,
+      amount: vouchAmount ? parseFloat(vouchAmount) : null,
+      currency: vouchCurrency,
+      invested_on: vouchInvestedOn || null,
+      investor_note: vouchInvestorNote.trim() || null,
+      proof_filename: vouchProofFilename || null,
+    };
+
+    try {
+      const { error } = await supabase.from("vouches").insert(payload);
+
+      if (error) {
+        if (error.code === "23505") {
+          setVouchErrors((prev) => ({
+            ...prev,
+            round: "You've already recorded a backing for this round.",
+          }));
+        } else {
+          setVouchErrors((prev) => ({ ...prev, general: error.message }));
+        }
+      } else {
+        setVouchSuccess(true);
+      }
+    } catch (err: any) {
+      setVouchErrors((prev) => ({ ...prev, general: err.message || "Failed to record vouch." }));
+    } finally {
+      setVouchSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-background text-text-primary">
@@ -176,6 +279,8 @@ export default function StartupProfilePage({ params }: PageProps) {
   }
 
   const isOwner = user !== null && user.id === company.owner_id;
+  const userRole = user?.user_metadata?.role || user?.user_metadata?.user_type || "";
+  const isInvestor = userRole === "investor";
   const foundedYear = company.founded_date ? new Date(company.founded_date).getFullYear() : "N/A";
 
   // Every claim defaults to self-reported. Admin review will set real tiers later.
@@ -404,13 +509,24 @@ export default function StartupProfilePage({ params }: PageProps) {
                 Request an introduction or contact the founders directly to discuss potential opportunities.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => alert("Contact request sent to the founder!")}
-              className="h-9 px-4 bg-accent hover:bg-accent/90 text-surface rounded-button text-xs font-medium transition-colors cursor-pointer select-none whitespace-nowrap"
-            >
-              Contact founder
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5 flex-shrink-0">
+              {user && isInvestor && company.status === "approved" && (
+                <button
+                  type="button"
+                  onClick={handleVouchClick}
+                  className="h-9 px-4 border border-border-hairline hover:bg-background text-text-primary rounded-button text-xs font-medium transition-colors cursor-pointer select-none whitespace-nowrap animate-in fade-in duration-150"
+                >
+                  I Invested Here
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => alert("Contact request sent to the founder!")}
+                className="h-9 px-4 bg-accent hover:bg-accent/90 text-surface rounded-button text-xs font-medium transition-colors cursor-pointer select-none whitespace-nowrap"
+              >
+                Contact founder
+              </button>
+            </div>
           </div>
         )}
 
@@ -736,6 +852,218 @@ export default function StartupProfilePage({ params }: PageProps) {
         )}
         
       </main>
+
+      {/* Vouch Form Modal Overlay */}
+      {showVouchModal && (
+        <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+          <div className="bg-surface border border-border-hairline rounded-card p-6 md:p-8 shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto space-y-6 animate-in zoom-in-95 duration-150 text-left">
+            {vouchSuccess ? (
+              <div className="space-y-6 text-center animate-in fade-in duration-200">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-success/10 border border-success/15 text-success">
+                  <svg className="w-6 h-6 stroke-current fill-none" viewBox="0 0 12 12" strokeWidth="2">
+                    <polyline points="2.5 6 4.5 8 9.5 3.5" />
+                  </svg>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium text-text-primary">Backing Recorded</h3>
+                  <p className="text-sm text-text-secondary leading-relaxed">
+                    Recorded. The founder will be asked to confirm this backing.
+                  </p>
+                </div>
+                <div className="pt-2 flex flex-col gap-2">
+                  <Link
+                    href="/dashboard"
+                    className="w-full h-9 bg-accent hover:bg-accent/90 text-surface rounded-button text-sm font-medium transition-colors cursor-pointer select-none flex items-center justify-center"
+                  >
+                    Go to Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVouchModal(false);
+                      setVouchSuccess(false);
+                    }}
+                    className="w-full h-9 border border-border-hairline hover:bg-background text-text-primary rounded-button text-sm font-medium transition-colors cursor-pointer select-none"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center border-b border-border-hairline pb-3">
+                  <h3 className="text-lg font-medium text-text-primary">Record Your Backing</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowVouchModal(false)}
+                    className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                    aria-label="Close modal"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {vouchErrors.general && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-150 text-danger text-xs font-medium">
+                    {vouchErrors.general}
+                  </div>
+                )}
+
+                <form onSubmit={handleVouchSubmit} className="space-y-4">
+                  {/* Round Input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="vouch_round" className="text-xs font-semibold text-text-primary">
+                      Round <span className="text-accent">*</span>
+                    </label>
+                    <input
+                      id="vouch_round"
+                      type="text"
+                      placeholder="e.g. Seed, Pre-Series A"
+                      value={vouchRound}
+                      onChange={(e) => {
+                        setVouchRound(e.target.value);
+                        setVouchErrors((prev) => ({ ...prev, round: "" }));
+                      }}
+                      className="h-9 w-full border border-border-hairline rounded-button px-3 bg-surface text-sm text-text-primary placeholder:text-text-secondary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent"
+                    />
+                    {vouchErrors.round && (
+                      <span className="text-xs text-danger mt-0.5">{vouchErrors.round}</span>
+                    )}
+                  </div>
+
+                  {/* Amount & Currency */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="vouch_amount" className="text-xs font-semibold text-text-primary">
+                        Amount
+                      </label>
+                      <input
+                        id="vouch_amount"
+                        type="number"
+                        placeholder="e.g. 500000"
+                        value={vouchAmount}
+                        onChange={(e) => setVouchAmount(e.target.value)}
+                        className="h-9 w-full border border-border-hairline rounded-button px-3 bg-surface text-sm text-text-primary placeholder:text-text-secondary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="vouch_currency" className="text-xs font-semibold text-text-primary">
+                        Currency
+                      </label>
+                      <select
+                        id="vouch_currency"
+                        value={vouchCurrency}
+                        onChange={(e) => setVouchCurrency(e.target.value)}
+                        className="h-9 w-full border border-border-hairline rounded-button px-3 bg-surface text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent"
+                      >
+                        <option value="INR">INR</option>
+                        <option value="USD">USD</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Date Invested */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="vouch_date" className="text-xs font-semibold text-text-primary">
+                      Date invested
+                    </label>
+                    <input
+                      id="vouch_date"
+                      type="date"
+                      value={vouchInvestedOn}
+                      onChange={(e) => setVouchInvestedOn(e.target.value)}
+                      className="h-9 w-full border border-border-hairline rounded-button px-3 bg-surface text-sm text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent"
+                    />
+                  </div>
+
+                  {/* Note Input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="vouch_note" className="text-xs font-semibold text-text-primary">
+                      Investor note
+                    </label>
+                    <textarea
+                      id="vouch_note"
+                      placeholder="Anything the founder or reviewer should know."
+                      maxLength={300}
+                      rows={3}
+                      value={vouchInvestorNote}
+                      onChange={(e) => setVouchInvestorNote(e.target.value)}
+                      className="w-full border border-border-hairline rounded-button p-3 bg-surface text-sm text-text-primary placeholder:text-text-secondary focus:outline-hidden focus:ring-1 focus:ring-accent focus:border-accent resize-none font-sans"
+                    />
+                    <span className="text-[10px] text-text-secondary text-right">
+                      {vouchInvestorNote.length}/300 chars
+                    </span>
+                  </div>
+
+                  {/* Proof Document Selection */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-text-primary">
+                      Proof document
+                    </label>
+                    
+                    {vouchProofFilename ? (
+                      <div className="flex items-center justify-between border border-border-hairline rounded-button bg-surface p-3 text-sm text-text-primary">
+                        <span className="truncate font-medium text-xs">{vouchProofFilename}</span>
+                        <button
+                          type="button"
+                          onClick={() => setVouchProofFilename(null)}
+                          className="text-xs text-text-secondary hover:text-accent font-medium cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center border border-dashed border-border-hairline hover:border-accent/40 rounded-button bg-surface p-4 text-center cursor-pointer group transition-colors duration-150">
+                        <svg className="w-5 h-5 text-text-secondary group-hover:text-accent transition-colors duration-150 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span className="text-xs text-text-primary font-medium">Select proof file</span>
+                        <span className="text-[10px] text-text-secondary mt-0.5">Filename will be stored locally</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setVouchProofFilename(e.target.files[0].name);
+                            }
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowVouchModal(false)}
+                      className="flex-1 h-9 border border-border-hairline hover:bg-background text-text-primary rounded-button text-sm font-medium transition-colors cursor-pointer select-none text-center"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={vouchSubmitting}
+                      className="flex-1 h-9 bg-accent hover:bg-accent/90 text-surface rounded-button text-sm font-medium transition-colors cursor-pointer select-none flex items-center justify-center gap-2 disabled:bg-opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {vouchSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-surface border-t-transparent rounded-full animate-spin"></div>
+                          <span>Recording...</span>
+                        </>
+                      ) : (
+                        <span>Record Backing</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+              )}
+            </div>
+          </div>
+        )}
 
       <Footer />
     </div>

@@ -262,7 +262,7 @@ export default function Navbar({
                   
                   {/* Menu Items */}
                   <div className="space-y-0.5">
-                    {userRole === "founder" && (
+                    {(userRole === "founder" || userRole === "investor") && (
                       <Link
                         href="/dashboard"
                         onClick={() => setProfileOpen(false)}
@@ -282,11 +282,11 @@ export default function Navbar({
                     )}
                     {userRole === "investor" && (
                       <Link
-                        href="/directory"
+                        href="/investor/register"
                         onClick={() => setProfileOpen(false)}
                         className="block px-2 py-1.5 text-sm text-text-primary hover:bg-background rounded-button transition-colors"
                       >
-                        Directory
+                        My Profile
                       </Link>
                     )}
                     <Link
@@ -385,7 +385,7 @@ export default function Navbar({
                   )}
                 </div>
                 <div className="space-y-1 pl-2">
-                  {userRole === "founder" && (
+                  {(userRole === "founder" || userRole === "investor") && (
                     <Link
                       href="/dashboard"
                       onClick={() => setMobileMenuOpen(false)}
@@ -405,11 +405,11 @@ export default function Navbar({
                   )}
                   {userRole === "investor" && (
                     <Link
-                      href="/directory"
+                      href="/investor/register"
                       onClick={() => setMobileMenuOpen(false)}
                       className="block py-1.5 text-sm font-medium text-text-primary hover:text-accent transition-colors"
                     >
-                      Directory
+                      My Profile
                     </Link>
                   )}
                   <Link
