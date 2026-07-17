@@ -136,7 +136,7 @@ export default function StartupProfilePage({ params }: PageProps) {
         // 5. Fetch verification timeline events
         const { data: eventsData, error: eventsError } = await supabase
           .from("verification_events")
-          .select("seq, id, event_type, created_at, payload, source_actor_id")
+          .select("seq, id, event_type, created_at, payload, source_actor_id, hash")
           .eq("company_id", id)
           .in("event_type", ["company_status_changed", "claim_tier_changed", "vouch_admin_confirmed"])
           .order("seq", { ascending: true });
@@ -947,7 +947,8 @@ export default function StartupProfilePage({ params }: PageProps) {
               <div className="divide-y divide-border-hairline">
                 {timelineEvents.map((event) => {
                   const isHashExpanded = expandedHashEventId === event.id;
-                  const displayHash = isHashExpanded ? event.hash : `${event.hash.substring(0, 10)}...`;
+                  const rawHash = event.hash || "";
+                  const displayHash = isHashExpanded ? rawHash : `${rawHash.substring(0, 10)}...`;
 
                   return (
                     <div
