@@ -220,7 +220,9 @@ export default function AdminQueuePage() {
         return;
       }
 
-      if (invalidRow) {
+      const isTampered = invalidRow && invalidRow.seq !== null && invalidRow.seq !== undefined;
+
+      if (isTampered) {
         setIntegrityResult({
           status: "tampered",
           row: invalidRow
