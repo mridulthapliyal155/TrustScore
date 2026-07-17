@@ -89,6 +89,7 @@ export default function StartupProfilePage({ params }: PageProps) {
   const [vouchSubmitting, setVouchSubmitting] = useState(false);
   const [confirmedVouches, setConfirmedVouches] = useState<any[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
+  const [expandedHashEventId, setExpandedHashEventId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCompanyAndUser() {
@@ -844,35 +845,6 @@ export default function StartupProfilePage({ params }: PageProps) {
                 </div>
               </div>
             )}
-            
-            {/* Verification Timeline Section */}
-            {timelineEvents.length > 0 && (
-              <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4 animate-in fade-in duration-200">
-                <div className="border-b border-border-hairline pb-2.5">
-                  <h3 className="text-sm font-semibold text-text-primary">Verification Timeline</h3>
-                </div>
-                <div className="relative pl-4 space-y-6 text-xs text-left before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border-hairline">
-                  {timelineEvents.map((event) => (
-                    <div key={event.id} className="relative space-y-1">
-                      {/* Timeline Node Icon */}
-                      <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full border border-accent bg-surface" />
-                      
-                      <p className="font-medium text-text-primary">
-                        {event.formatted_label}
-                      </p>
-                      <p className="text-[10px] text-text-secondary font-light">
-                        {new Date(event.created_at).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
             {/* Endorsements column */}
             <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4">
               <div className="flex justify-between items-center border-b border-border-hairline pb-2.5">
@@ -955,6 +927,69 @@ export default function StartupProfilePage({ params }: PageProps) {
           </div>
 
         </div>
+
+        {/* Verification Ledger Section */}
+        {timelineEvents.length > 0 && (
+          <div className="bg-surface border border-border-hairline rounded-card p-6 space-y-4 animate-in fade-in duration-200">
+            <div>
+              <h2 className="text-xl font-medium tracking-tight text-text-primary">
+                Verification Ledger
+              </h2>
+              <p className="text-xs text-text-secondary mt-1.5 leading-relaxed max-w-3xl">
+                Every verification event is recorded automatically by the database, not by application code. 
+                Each entry is sealed with a SHA-256 hash that includes the previous entry's hash, so altering 
+                any past record breaks every record after it. The ledger is append-only — no user, including 
+                administrators, can edit or delete an entry. This cryptographic chaining protects against silent data corruption and unauthorized modifications, though it does not prevent an operator with direct table-write access from recalculating the chain.
+              </p>
+            </div>
+
+            <div className="border border-border-hairline rounded-card overflow-hidden">
+              <div className="divide-y divide-border-hairline">
+                {timelineEvents.map((event) => {
+                  const isHashExpanded = expandedHashEventId === event.id;
+                  const displayHash = isHashExpanded ? event.hash : `${event.hash.substring(0, 10)}...`;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#FAFAF8]/20 hover:bg-[#FAFAF8]/50 transition-colors text-left"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-semibold text-text-primary text-sm">
+                          {event.formatted_label}
+                        </p>
+                        <p className="text-[10px] text-text-secondary">
+                          {new Date(event.created_at).toLocaleString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-text-secondary font-mono bg-background border border-border-hairline px-2 py-0.5 rounded">
+                          {displayHash}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedHashEventId(isHashExpanded ? null : event.id)}
+                          className="text-[10px] font-semibold text-accent hover:underline cursor-pointer select-none"
+                        >
+                          {isHashExpanded ? "Collapse" : "Show full"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Suggestions Section (Owner View only) */}
         {isOwner && (

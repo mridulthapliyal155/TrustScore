@@ -34,6 +34,10 @@ export default function AdminQueuePage() {
   const [confirmingVouchId, setConfirmingVouchId] = useState<string | null>(null);
   const [rejectingVouchId, setRejectingVouchId] = useState<string | null>(null);
 
+  // Ledger Integrity States
+  const [verifyingLedger, setVerifyingLedger] = useState(false);
+  const [integrityResult, setIntegrityResult] = useState<{ status: "intact" | "tampered"; count?: number; row?: any } | null>(null);
+
   useEffect(() => {
     async function checkAdminAndFetch() {
       try {
@@ -204,6 +208,44 @@ export default function AdminQueuePage() {
     }
   };
 
+  const handleVerifyLedger = async () => {
+    setVerifyingLedger(true);
+    setIntegrityResult(null);
+    setErrorMsg("");
+    try {
+      const { data: invalidRow, error: rpcError } = await supabase.rpc("verify_event_chain");
+      
+      if (rpcError) {
+        setErrorMsg(rpcError.message);
+        return;
+      }
+
+      if (invalidRow) {
+        setIntegrityResult({
+          status: "tampered",
+          row: invalidRow
+        });
+      } else {
+        const { count, error: countError } = await supabase
+          .from("verification_events")
+          .select("*", { head: true, count: "exact" });
+
+        if (countError) {
+          setErrorMsg(countError.message);
+        } else {
+          setIntegrityResult({
+            status: "intact",
+            count: count || 0
+          });
+        }
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to run ledger verification.");
+    } finally {
+      setVerifyingLedger(false);
+    }
+  };
+
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "under_review":
@@ -251,6 +293,65 @@ export default function AdminQueuePage() {
           <p className="text-sm text-text-secondary">
             Select a submitted company profile to perform verification checks and assign a TrustScore.
           </p>
+        </div>
+
+        {/* Ledger Integrity Card */}
+        <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4 text-left animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary">Ledger Cryptographic Integrity</h3>
+              <p className="text-xs text-text-secondary mt-0.5 font-light">
+                Run cryptographic verification checks across the global verification events log.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {integrityResult && (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-semibold tracking-wide ${
+                  integrityResult.status === "intact"
+                    ? "bg-success/10 border-success/20 text-success"
+                    : "bg-warning/10 border-warning/20 text-warning"
+                }`}>
+                  {integrityResult.status === "intact"
+                    ? `Ledger intact (${integrityResult.count} events checked)`
+                    : "Tampering detected"}
+                </span>
+              )}
+              <button
+                type="button"
+                disabled={verifyingLedger}
+                onClick={handleVerifyLedger}
+                className="h-8 px-4 bg-accent hover:bg-accent/90 text-surface rounded-button text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {verifyingLedger ? (
+                  <div className="w-3.5 h-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
+                ) : null}
+                Verify Ledger
+              </button>
+            </div>
+          </div>
+
+          {integrityResult && integrityResult.status === "tampered" && (
+            <div className="bg-[#FFF5F5] border border-[#FFD8D8] text-xs p-4 rounded-button text-left space-y-2 mt-2 animate-in slide-in-from-top duration-200">
+              <div className="flex items-center gap-2 text-danger font-semibold">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Cryptographic Tampering Mismatch</span>
+              </div>
+              <p className="text-text-secondary font-light">
+                The event chain failed verification. The first modified or corrupted ledger entry details:
+              </p>
+              <div className="bg-background/50 p-3 rounded-button border border-border-hairline/40 text-[11px] font-mono space-y-1.5 text-text-primary overflow-x-auto">
+                <p><span className="font-semibold text-text-secondary">Sequence ID:</span> {integrityResult.row.seq}</p>
+                <p><span className="font-semibold text-text-secondary">Event UUID:</span> {integrityResult.row.id}</p>
+                <p><span className="font-semibold text-text-secondary">Event Type:</span> {integrityResult.row.event_type}</p>
+                <p><span className="font-semibold text-text-secondary">Timestamp (UTC):</span> {new Date(integrityResult.row.created_at).toUTCString()}</p>
+                <p><span className="font-semibold text-text-secondary">Payload:</span> {JSON.stringify(integrityResult.row.payload)}</p>
+                <p><span className="font-semibold text-text-secondary">Stored Hash:</span> {integrityResult.row.hash}</p>
+                <p><span className="font-semibold text-text-secondary">Previous Hash:</span> {integrityResult.row.prev_hash}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {errorMsg && (
