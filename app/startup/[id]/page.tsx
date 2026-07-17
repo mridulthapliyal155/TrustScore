@@ -87,6 +87,8 @@ export default function StartupProfilePage({ params }: PageProps) {
     general: "",
   });
   const [vouchSubmitting, setVouchSubmitting] = useState(false);
+  const [confirmedVouches, setConfirmedVouches] = useState<any[]>([]);
+  const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchCompanyAndUser() {
@@ -122,6 +124,97 @@ export default function StartupProfilePage({ params }: PageProps) {
         }
 
         setCompany(companyData as Company);
+
+        // 4. Fetch confirmed vouches for this company
+        const { data: vouchesData, error: vouchesError } = await supabase
+          .from("vouches")
+          .select("id, round, investor_id")
+          .eq("company_id", id)
+          .eq("status", "confirmed");
+
+        // 5. Fetch verification timeline events
+        const { data: eventsData, error: eventsError } = await supabase
+          .from("verification_events")
+          .select("seq, id, event_type, created_at, payload, source_actor_id")
+          .eq("company_id", id)
+          .in("event_type", ["company_status_changed", "claim_tier_changed", "vouch_admin_confirmed"])
+          .order("seq", { ascending: true });
+
+        const uniqueInvestorIds = new Set<string>();
+        if (vouchesData) {
+          vouchesData.forEach((v) => uniqueInvestorIds.add(v.investor_id));
+        }
+        if (eventsData) {
+          eventsData.forEach((e) => {
+            if (e.source_actor_id) {
+              uniqueInvestorIds.add(e.source_actor_id);
+            }
+          });
+        }
+
+        let profilesMap = new Map<string, string | null>();
+        if (uniqueInvestorIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from("confirmed_investors_public")
+            .select("user_id, firm_name")
+            .in("user_id", Array.from(uniqueInvestorIds));
+          if (profiles) {
+            profiles.forEach((p) => {
+              profilesMap.set(p.user_id, p.firm_name);
+            });
+          }
+        }
+
+        if (!vouchesError && vouchesData) {
+          const joinedVouches = vouchesData.map((v) => ({
+            ...v,
+            firm_name: profilesMap.get(v.investor_id) || "Angel Investor"
+          }));
+          setConfirmedVouches(joinedVouches);
+        } else {
+          setConfirmedVouches([]);
+        }
+
+        if (!eventsError && eventsData) {
+          // Exclude claim_tier_changed events whose payload.new_tier is 'self-reported'
+          const filtered = eventsData.filter((e) => {
+            if (e.event_type === "claim_tier_changed") {
+              const newTier = e.payload?.new_tier;
+              return newTier && newTier !== "self-reported";
+            }
+            return true;
+          });
+
+          const mappedEvents = filtered.map((e) => {
+            let label = "";
+            if (e.event_type === "company_status_changed" && e.payload?.new_status === "approved") {
+              label = "Registration approved";
+            } else if (e.event_type === "claim_tier_changed") {
+              const key = e.payload?.key;
+              const newTier = e.payload?.new_tier;
+              const keyLabels: Record<string, string> = {
+                cin: "Corporate identity (CIN)",
+                revenue: "Revenue",
+                founders: "Founders",
+                funding: "Funding",
+                incubator: "Incubator",
+              };
+              const keyLabel = keyLabels[key] || key;
+              label = `${keyLabel} claim verified as ${newTier}`;
+            } else if (e.event_type === "vouch_admin_confirmed") {
+              const firmName = e.source_actor_id ? (profilesMap.get(e.source_actor_id) || "Angel Investor") : "Angel Investor";
+              label = `Backing confirmed from ${firmName}`;
+            }
+            return {
+              ...e,
+              formatted_label: label,
+            };
+          }).filter((e) => e.formatted_label !== "");
+
+          setTimelineEvents(mappedEvents);
+        } else {
+          setTimelineEvents([]);
+        }
       } catch (err: any) {
         setFetchError(err.message || "An error occurred while loading this profile.");
       } finally {
@@ -728,6 +821,58 @@ export default function StartupProfilePage({ params }: PageProps) {
           {/* Right Side: Endorsements, Incubators, Raising status */}
           <div className="space-y-6">
             
+            {/* Backed by Section */}
+            {confirmedVouches.length > 0 && (
+              <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4 animate-in fade-in duration-200">
+                <div className="border-b border-border-hairline pb-2.5">
+                  <h3 className="text-sm font-semibold text-text-primary">Backed by</h3>
+                </div>
+                <div className="space-y-3">
+                  {confirmedVouches.map((vouch) => (
+                    <div
+                      key={vouch.id}
+                      className="bg-[#FAFAF8] border border-border-hairline rounded-[6px] p-3 text-xs space-y-1 text-left"
+                    >
+                      <p className="font-semibold text-text-primary">
+                        {vouch.firm_name}
+                      </p>
+                      <p className="text-[10px] text-text-secondary capitalize">
+                        Backed round: {vouch.round}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Verification Timeline Section */}
+            {timelineEvents.length > 0 && (
+              <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4 animate-in fade-in duration-200">
+                <div className="border-b border-border-hairline pb-2.5">
+                  <h3 className="text-sm font-semibold text-text-primary">Verification Timeline</h3>
+                </div>
+                <div className="relative pl-4 space-y-6 text-xs text-left before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border-hairline">
+                  {timelineEvents.map((event) => (
+                    <div key={event.id} className="relative space-y-1">
+                      {/* Timeline Node Icon */}
+                      <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full border border-accent bg-surface" />
+                      
+                      <p className="font-medium text-text-primary">
+                        {event.formatted_label}
+                      </p>
+                      <p className="text-[10px] text-text-secondary font-light">
+                        {new Date(event.created_at).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Endorsements column */}
             <div className="bg-surface border border-border-hairline rounded-card p-5 space-y-4">
               <div className="flex justify-between items-center border-b border-border-hairline pb-2.5">
@@ -891,18 +1036,23 @@ export default function StartupProfilePage({ params }: PageProps) {
               </div>
             ) : (
               <>
-                <div className="flex justify-between items-center border-b border-border-hairline pb-3">
-                  <h3 className="text-lg font-medium text-text-primary">Record Your Backing</h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowVouchModal(false)}
-                    className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-                    aria-label="Close modal"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                <div className="border-b border-border-hairline pb-3">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-text-primary">Record Your Backing</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowVouchModal(false)}
+                      className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                      aria-label="Close modal"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-text-secondary mt-1.5 leading-relaxed font-light">
+                    Note: Your firm name (or profile type if angel) will appear publicly on the company profile once this backing is confirmed by the founder and reviewed.
+                  </p>
                 </div>
 
                 {vouchErrors.general && (
